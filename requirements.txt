@@ -10,7 +10,8 @@ WTForms==3.2.1
 
 # WSGI Server
 gunicorn>=20.1.0
-eventlet==0.33.3
+gevent>=23.9.0
+geventwebsocket>=0.10.1
 
 # Database
 SQLAlchemy==2.0.36
