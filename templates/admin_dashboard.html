@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard — EduCore{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Premium Admin Dashboard ───────────────────────── */
+.hero-banner {
+    background: linear-gradient(135deg, #3b0764 0%, #7c3aed 50%, #4f46e5 100%);
+    border-radius: 20px;
+    padding: 28px 32px;
+    color: white;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(124,58,237,0.3);
+}
+.hero-banner::before { content:'';position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:rgba(255,255,255,0.06);border-radius:50%; }
+.hero-banner::after  { content:'';position:absolute;bottom:-80px;left:25%;width:260px;height:260px;background:rgba(255,255,255,0.04);border-radius:50%; }
+.hero-inner          { position:relative;z-index:1; }
+.hero-name           { font-size:1.35rem;font-weight:700;margin:0;letter-spacing:-0.3px; }
+.hero-sub            { font-size:0.82rem;opacity:0.75;margin:2px 0 0; }
+.hero-action-btn { display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:12px;font-size:0.875rem;font-weight:600;text-decoration:none;transition:all 0.18s; }
+.hero-action-primary { background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.3);backdrop-filter:blur(8px); }
+.hero-action-primary:hover { background:rgba(255,255,255,0.3);color:white; }
+.hero-action-ghost   { background:transparent;color:white;border:1px solid rgba(255,255,255,0.25); }
+.hero-action-ghost:hover { background:rgba(255,255,255,0.1);color:white; }
+
+/* Stat cards — clickable */
+.stat-card-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px; }
+@media(max-width:768px){ .stat-card-grid{ grid-template-columns:repeat(2,1fr); } }
+.stat-prem {
+    background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;
+    position:relative;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s;
+    text-decoration:none;display:block;
+}
+.stat-prem:hover { transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,0.3); }
+.stat-prem-icon { width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:14px; }
+.stat-prem.purple .stat-prem-icon { background:rgba(167,139,250,0.12); }
+.stat-prem.cyan   .stat-prem-icon { background:rgba(6,182,212,0.12); }
+.stat-prem.indigo .stat-prem-icon { background:rgba(99,102,241,0.12); }
+.stat-prem.amber  .stat-prem-icon { background:rgba(245,158,11,0.12); }
+.stat-prem-val { font-size:1.8rem;font-weight:800;color:var(--text-primary);line-height:1; }
+.stat-prem-lbl { font-size:0.73rem;color:var(--text-muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.6px; }
+
+/* Pending alert */
+.pending-alert {
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.25);
+    border-left: 3px solid #f59e0b;
+    border-radius: 12px;
+    padding: 14px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.pending-review-btn {
+    display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:10px;
+    background:#f59e0b;color:white;font-size:0.82rem;font-weight:600;text-decoration:none;
+    transition:filter 0.15s;
+}
+.pending-review-btn:hover { filter:brightness(1.1);color:white; }
+
+/* Dept table */
+.dept-bar { height:4px;background:var(--surface-3);border-radius:2px;overflow:hidden;margin-top:4px; }
+.dept-bar-fill { height:100%;background:linear-gradient(90deg,#7c3aed,#4f46e5);border-radius:2px; }
+
+/* Activity feed */
+.activity-item  { display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border); }
+.activity-item:last-child { border-bottom:none; }
+.activity-dot   { width:8px;height:8px;border-radius:50%;background:var(--primary);margin-top:5px;flex-shrink:0; }
+.activity-time  { font-size:0.72rem;color:var(--text-muted);margin-top:2px; }
+
+/* Admin action grid — 3 columns */
+.admin-action-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:10px; }
+@media(max-width:768px){ .admin-action-grid{ grid-template-columns:repeat(2,1fr); } }
+.admin-action-tile {
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:6px;padding:16px 12px;border-radius:14px;text-decoration:none;
+    background:var(--surface-2);border:1px solid var(--border);
+    font-size:0.78rem;font-weight:600;color:var(--text-secondary);
+    text-align:center;transition:all 0.18s;
+}
+.admin-action-tile:hover { background:var(--surface-3);color:var(--text-primary);transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,0.25); }
+.admin-action-tile .tile-icon { font-size:1.5rem; }
+.admin-action-tile.highlight {
+    background:linear-gradient(135deg, rgba(124,58,237,0.15), rgba(79,70,229,0.15));
+    border-color:rgba(124,58,237,0.3);
+    color:#c4b5fd;
+}
+.admin-action-tile.highlight:hover { background:linear-gradient(135deg, rgba(124,58,237,0.25), rgba(79,70,229,0.25)); color:#e9d5ff; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── HERO ──────────────────────────────────── -->
+<div class="hero-banner mb-4">
+    <div class="hero-inner d-flex align-items-center justify-content-between gap-3 flex-wrap">
+        <div class="d-flex align-items-center gap-3">
+            <div style="width:52px;height:52px;background:rgba(255,255,255,0.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;border:1px solid rgba(255,255,255,0.2);">⚙️</div>
+            <div>
+                <p class="hero-name">System Administration</p>
+                <p class="hero-sub">Full control over students, courses, faculty &amp; analytics</p>
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('admin_ai_analytics') }}" class="hero-action-btn hero-action-primary">
+                <i class="fas fa-brain"></i> AI Analytics
+            </a>
+            <a href="{{ url_for('advanced_search') }}" class="hero-action-btn hero-action-ghost">
+                <i class="fas fa-search"></i> Search
+            </a>
+            <a href="{{ url_for('export_full_report') }}" class="hero-action-btn hero-action-ghost">
+                <i class="fas fa-download"></i> Export
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ── STAT CARDS (clickable) ─────────────── -->
+<div class="stat-card-grid">
+    <a href="{{ url_for('student_list') }}" class="stat-prem purple">
+        <div class="stat-prem-icon">👥</div>
+        <div class="stat-prem-val">{{ stats.total_students }}</div>
+        <div class="stat-prem-lbl">Total Students</div>
+    </a>
+    <a href="{{ url_for('course_list') }}" class="stat-prem cyan">
+        <div class="stat-prem-icon">📚</div>
+        <div class="stat-prem-val">{{ stats.total_courses }}</div>
+        <div class="stat-prem-lbl">Active Courses</div>
+    </a>
+    <a href="{{ url_for('instructor_list') }}" class="stat-prem indigo">
+        <div class="stat-prem-icon">👨‍🏫</div>
+        <div class="stat-prem-val">{{ stats.total_teachers }}</div>
+        <div class="stat-prem-lbl">Instructors</div>
+    </a>
+    <a href="{{ url_for('department_list') }}" class="stat-prem amber">
+        <div class="stat-prem-icon">🏢</div>
+        <div class="stat-prem-val">{{ stats.total_departments }}</div>
+        <div class="stat-prem-lbl">Departments</div>
+    </a>
+</div>
+
+<!-- ── PENDING ALERT ──────────────────────── -->
+{% if pending_applications > 0 %}
+<div class="pending-alert">
+    <div>
+        <div style="font-weight:700;color:#fbbf24;font-size:0.9rem;">
+            📝 {{ pending_applications }} Pending Course Application{{ 's' if pending_applications > 1 }} awaiting review
+        </div>
+        <div style="font-size:0.78rem;color:#f59e0b;opacity:0.8;margin-top:2px;">Students are waiting for approval</div>
+    </div>
+    <a href="{{ url_for('admin_applications') }}" class="pending-review-btn">
+        Review Now <i class="fas fa-arrow-right"></i>
+    </a>
+</div>
+{% endif %}
+
+<!-- ── MAIN GRID ──────────────────────────── -->
+<div class="row g-4">
+
+    <!-- Department Overview -->
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-building" style="color:#a78bfa;"></i>
+                    <span style="font-weight:700;font-size:0.9rem;">Department Overview</span>
+                </div>
+                <a href="{{ url_for('department_list') }}" style="font-size:0.75rem;padding:5px 14px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-secondary);border-radius:8px;text-decoration:none;">Manage →</a>
+            </div>
+            <div style="overflow:hidden;border-radius:0 0 var(--radius-lg) var(--radius-lg);">
+                {% if department_stats %}
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th style="font-size:0.7rem;letter-spacing:0.7px;text-transform:uppercase;color:var(--text-muted);background:var(--surface-2);">Department</th>
+                            <th style="font-size:0.7rem;letter-spacing:0.7px;text-transform:uppercase;color:var(--text-muted);background:var(--surface-2);">Students</th>
+                            <th style="font-size:0.7rem;letter-spacing:0.7px;text-transform:uppercase;color:var(--text-muted);background:var(--surface-2);">Courses</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dept in department_stats %}
+                        <tr>
+                            <td style="font-weight:600;font-size:0.85rem;">{{ dept.dept_name }}</td>
+                            <td>
+                                <span style="background:rgba(167,139,250,0.12);color:#c4b5fd;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;">{{ dept.student_count }}</span>
+                            </td>
+                            <td>
+                                <span style="background:rgba(34,197,94,0.12);color:#4ade80;padding:2px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;">{{ dept.course_count }}</span>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3" style="text-align:center;padding:24px;color:var(--text-muted);font-size:0.85rem;">No departments yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="padding:32px;text-align:center;color:var(--text-muted);">
+                    <div style="font-size:2rem;margin-bottom:8px;">🏢</div>
+                    <div style="font-size:0.875rem;margin-bottom:12px;">No departments yet.</div>
+                    <a href="{{ url_for('department_add') }}" style="display:inline-block;padding:7px 16px;border-radius:8px;background:var(--primary);color:white;font-size:0.8rem;font-weight:600;text-decoration:none;">Add Department</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-history" style="color:#a78bfa;"></i>
+                    <span style="font-weight:700;font-size:0.9rem;">Recent Activity</span>
+                </div>
+                <a href="{{ url_for('audit_log') }}" style="font-size:0.75rem;padding:5px 14px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-secondary);border-radius:8px;text-decoration:none;">Audit Log →</a>
+            </div>
+            <div class="card-body" style="padding:8px 20px;">
+                {% if recent_activities %}
+                    {% for activity in recent_activities %}
+                    <div class="activity-item">
+                        <div class="activity-dot" style="background:#a78bfa;"></div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:0.85rem;font-weight:500;color:var(--text-primary);">{{ activity.action }}</div>
+                            <div class="activity-time">
+                                <i class="fas fa-user me-1"></i>{{ activity.username }}
+                                &nbsp;·&nbsp;
+                                <i class="fas fa-clock me-1"></i>{{ activity.created_at[:16] if activity.created_at else '' }}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div style="padding:28px;text-align:center;color:var(--text-muted);">
+                    <div style="font-size:2rem;margin-bottom:8px;opacity:0.4;">📋</div>
+                    <div style="font-size:0.85rem;">No recent activity.</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions — Full Width -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-bolt" style="color:#a78bfa;"></i>
+                    <span style="font-weight:700;font-size:0.9rem;">Quick Actions</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="admin-action-grid">
+                    <a href="{{ url_for('student_add') }}" class="admin-action-tile">
+                        <div class="tile-icon">👤</div><span>Add Student</span>
+                    </a>
+                    <a href="{{ url_for('instructor_add') }}" class="admin-action-tile">
+                        <div class="tile-icon">👨‍🏫</div><span>Add Instructor</span>
+                    </a>
+                    <a href="{{ url_for('course_add') }}" class="admin-action-tile">
+                        <div class="tile-icon">📖</div><span>Add Course</span>
+                    </a>
+                    <a href="{{ url_for('department_add') }}" class="admin-action-tile">
+                        <div class="tile-icon">🏢</div><span>Add Department</span>
+                    </a>
+                    <a href="{{ url_for('enrollment_list') }}" class="admin-action-tile">
+                        <div class="tile-icon">🎓</div><span>Enrollments</span>
+                    </a>
+                    <a href="{{ url_for('admin_applications') }}" class="admin-action-tile highlight">
+                        <div class="tile-icon">📝</div>
+                        <span>Applications
+                            {% if pending_applications > 0 %}
+                            <span style="background:#ef4444;color:white;border-radius:8px;padding:1px 5px;font-size:0.65rem;margin-left:2px;">{{ pending_applications }}</span>
+                            {% endif %}
+                        </span>
+                    </a>
+                    <a href="{{ url_for('admin_ai_analytics') }}" class="admin-action-tile highlight">
+                        <div class="tile-icon">🧠</div><span>AI Analytics</span>
+                    </a>
+                    <a href="{{ url_for('advanced_search') }}" class="admin-action-tile">
+                        <div class="tile-icon">🔍</div><span>Search</span>
+                    </a>
+                    <a href="{{ url_for('export_full_report') }}" class="admin-action-tile">
+                        <div class="tile-icon">📥</div><span>Export Report</span>
+                    </a>
+                    <a href="{{ url_for('email_settings_page') }}" class="admin-action-tile">
+                        <div class="tile-icon">📧</div><span>Email Settings</span>
+                    </a>
+                    <a href="{{ url_for('settings') }}" class="admin-action-tile">
+                        <div class="tile-icon">⚙️</div><span>Settings</span>
+                    </a>
+                    <a href="{{ url_for('audit_log') }}" class="admin-action-tile">
+                        <div class="tile-icon">📜</div><span>Audit Log</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

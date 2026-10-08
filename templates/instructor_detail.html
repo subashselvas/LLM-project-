@@ -1,0 +1,163 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ instructor.first_name }} {{ instructor.last_name }} - Instructor Details{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('instructor_list') }}">Instructors</a></li>
+            <li class="breadcrumb-item active">{{ instructor.first_name }} {{ instructor.last_name }}</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row">
+    <!-- Instructor Information -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-chalkboard-teacher"></i> Instructor Information</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="display-2 text-primary mb-3">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <h3>{{ instructor.first_name }} {{ instructor.last_name }}</h3>
+                <p class="text-muted mb-3">{{ instructor.instructor_id }}</p>
+                
+                <table class="table table-sm text-start">
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ instructor.email }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone:</th>
+                        <td>{{ instructor.phone or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Department:</th>
+                        <td>{{ instructor.dept_name or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Qualification:</th>
+                        <td>{{ instructor.qualification or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Specialization:</th>
+                        <td>{{ instructor.specialization or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Joining Date:</th>
+                        <td>{{ instructor.joining_date or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Office Hours:</th>
+                        <td>{{ instructor.office_hours or 'Not specified' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            {% if instructor.status == 'active' %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+                
+                {% if session.role == 'admin' %}
+                <div class="d-grid gap-2">
+                    <button class="btn btn-warning" onclick="alert('Edit feature coming soon!')">
+                        <i class="fas fa-edit"></i> Edit Instructor
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Courses Taught -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-book"></i> Courses Taught ({{ courses|length }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Course Code</th>
+                                <th>Course Name</th>
+                                <th>Department</th>
+                                <th>Semester</th>
+                                <th>Academic Year</th>
+                                <th>Students</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for course in courses %}
+                            <tr>
+                                <td><strong>{{ course.course_code }}</strong></td>
+                                <td>{{ course.course_name }}</td>
+                                <td>{{ course.dept_name or 'N/A' }}</td>
+                                <td>{{ course.semester or 'N/A' }}</td>
+                                <td>{{ course.academic_year or 'N/A' }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ course.enrolled_count or 0 }}</span>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('course_detail', course_id=course.id) }}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">
+                                    No courses assigned to this instructor.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Info -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="fas fa-file-alt"></i> Qualifications</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>{{ instructor.qualification or 'No qualification details available.' }}</p>
+                        {% if instructor.specialization %}
+                        <p><strong>Specialization:</strong> {{ instructor.specialization }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="fas fa-clock"></i> Office Hours</h5>
+                    </div>
+                    <div class="card-body">
+                        <p>{{ instructor.office_hours or 'Office hours not specified.' }}</p>
+                        {% if instructor.salary and session.role == 'admin' %}
+                        <p><strong>Salary:</strong> ${{ "%.2f"|format(instructor.salary) }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

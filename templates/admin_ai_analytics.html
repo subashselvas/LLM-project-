@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% block title %}AI Analytics Dashboard{% endblock %}
+{% block content %}
+<style>
+.analytics-header { background:linear-gradient(135deg,#1a1a2e,#302b63,#0f3460); color:white; border-radius:16px; padding:28px; margin-bottom:24px; }
+.stat-card { border-radius:14px; border:none; box-shadow:0 4px 16px rgba(0,0,0,0.10); padding:20px; text-align:center; color:white; }
+.risk-row { border-radius:10px; padding:12px 16px; margin-bottom:8px; }
+.dept-bar { height:10px; border-radius:5px; background:#e9ecef; overflow:hidden; margin-top:4px; }
+.dept-bar-fill { height:100%; border-radius:5px; }
+</style>
+
+<div class="container-fluid">
+
+    <!-- Header -->
+    <div class="analytics-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h3 class="mb-1">🧠 AI Analytics Dashboard</h3>
+                <p class="opacity-75 mb-0">School-wide AI insights • Attendance Risk • Department Performance</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('export_full_report') }}" class="btn btn-warning">
+                    📥 Export Full Report
+                </a>
+                <a href="{{ url_for('advanced_search') }}" class="btn btn-outline-light">
+                    🔍 Advanced Search
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-2">
+            <div class="stat-card" style="background:linear-gradient(135deg,#0f3460,#16213e);">
+                <div style="font-size:2rem;font-weight:800;">{{ total_students }}</div>
+                <div class="opacity-75 small">Total Students</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card" style="background:linear-gradient(135deg,#198754,#0d6832);">
+                <div style="font-size:2rem;font-weight:800;">{{ safe_count }}</div>
+                <div class="opacity-75 small">✅ Safe</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card" style="background:linear-gradient(135deg,#fd7e14,#dc6a00);">
+                <div style="font-size:2rem;font-weight:800;">{{ at_risk_count - critical_count }}</div>
+                <div class="opacity-75 small">⚠️ Warning</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card" style="background:linear-gradient(135deg,#dc3545,#b02030);">
+                <div style="font-size:2rem;font-weight:800;">{{ critical_count }}</div>
+                <div class="opacity-75 small">🚨 Critical</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card" style="background:linear-gradient(135deg,#6f42c1,#5a32a3);">
+                <div style="font-size:2rem;font-weight:800;">{{ total_courses }}</div>
+                <div class="opacity-75 small">📚 Courses</div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="stat-card" style="background:linear-gradient(135deg,#0dcaf0,#0a9aba);">
+                <div style="font-size:2rem;font-weight:800;">{{ total_enrollments }}</div>
+                <div class="opacity-75 small">📋 Enrollments</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- At Risk Students -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow">
+                <div class="card-header d-flex justify-content-between align-items-center"
+                     style="background:#1a1a2e;color:white;">
+                    <h6 class="mb-0">🚨 At-Risk Students ({{ at_risk_students|length }})</h6>
+                    <a href="{{ url_for('export_attendance') }}" class="btn btn-warning btn-sm">
+                        📥 Export
+                    </a>
+                </div>
+                <div class="card-body p-3" style="max-height:400px;overflow-y:auto;">
+                    {% if at_risk_students %}
+                        {% for stu in at_risk_students %}
+                        <div class="risk-row d-flex justify-content-between align-items-center"
+                             style="background:{{ stu.color }}15; border-left:4px solid {{ stu.color }};">
+                            <div>
+                                <strong>{{ stu.name }}</strong><br>
+                                <small class="text-muted">{{ stu.student_id }} | {{ stu.dept }}</small>
+                            </div>
+                            <span class="badge px-2 py-1" style="background:{{ stu.color }};color:white;">
+                                {{ stu.badge }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="text-center py-4">
+                        <div style="font-size:3rem;">✅</div>
+                        <p class="text-muted mt-2">No at-risk students!</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Department Risk Analysis -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow">
+                <div class="card-header" style="background:#1a1a2e;color:white;">
+                    <h6 class="mb-0">🏢 Department Risk Analysis</h6>
+                </div>
+                <div class="card-body">
+                    {% for dept, data in dept_risk.items() %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <strong class="small">{{ dept }}</strong>
+                            <small class="text-muted">{{ data.total }} students</small>
+                        </div>
+                        <div class="d-flex gap-1" style="height:20px;">
+                            {% if data.safe > 0 %}
+                            <div style="width:{{ (data.safe/data.total*100)|round }}%;background:#198754;border-radius:4px;"
+                                 title="{{ data.safe }} Safe"></div>
+                            {% endif %}
+                            {% if data.warning > 0 %}
+                            <div style="width:{{ (data.warning/data.total*100)|round }}%;background:#fd7e14;border-radius:4px;"
+                                 title="{{ data.warning }} Warning"></div>
+                            {% endif %}
+                            {% if data.critical > 0 %}
+                            <div style="width:{{ (data.critical/data.total*100)|round }}%;background:#dc3545;border-radius:4px;"
+                                 title="{{ data.critical }} Critical"></div>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-3 mt-1">
+                            <small class="text-success">✅ {{ data.safe }} Safe</small>
+                            <small style="color:#fd7e14;">⚠️ {{ data.warning }} Warning</small>
+                            <small class="text-danger">🚨 {{ data.critical }} Critical</small>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No data available</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Department Attendance Performance -->
+        <div class="col-md-12">
+            <div class="card border-0 shadow">
+                <div class="card-header d-flex justify-content-between align-items-center"
+                     style="background:#198754;color:white;">
+                    <h6 class="mb-0">📊 Department Attendance Performance</h6>
+                    <a href="{{ url_for('export_attendance') }}" class="btn btn-light btn-sm">
+                        📥 Export Attendance
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if dept_attendance %}
+                    <div class="row g-3">
+                        {% for dept in dept_attendance %}
+                        <div class="col-md-4">
+                            <div class="p-3 rounded" style="background:#f8f9fa;">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <strong class="small">{{ dept.dept_name }}</strong>
+                                    <span class="fw-bold"
+                                          style="color:{{ '#198754' if dept.avg_attendance >= 80 else '#fd7e14' if dept.avg_attendance >= 60 else '#dc3545' }}">
+                                        {{ dept.avg_attendance }}%
+                                    </span>
+                                </div>
+                                <div class="progress" style="height:10px;">
+                                    <div class="progress-bar"
+                                         style="width:{{ dept.avg_attendance }}%;
+                                                background:{{ '#198754' if dept.avg_attendance >= 80 else '#fd7e14' if dept.avg_attendance >= 60 else '#dc3545' }};">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center">No attendance data yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Export Buttons -->
+    <div class="card border-0 shadow mt-4">
+        <div class="card-header bg-dark text-white">
+            <h6 class="mb-0">📥 Export Reports</h6>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <a href="{{ url_for('export_students') }}" class="btn btn-primary w-100">
+                        👨‍🎓 Export Students
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('export_attendance') }}" class="btn btn-success w-100">
+                        📅 Export Attendance
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('export_courses') }}" class="btn btn-info w-100">
+                        📚 Export Courses
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ url_for('export_full_report') }}" class="btn btn-warning w-100">
+                        📊 Export Full Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">← Dashboard</a>
+    </div>
+</div>
+{% endblock %}

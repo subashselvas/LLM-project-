@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block title %}Advanced Search{% endblock %}
+{% block content %}
+<style>
+.search-header { background:linear-gradient(135deg,#1a1a2e,#0f3460); color:white; border-radius:14px; padding:24px; margin-bottom:24px; }
+.result-card { border-radius:12px; border:none; box-shadow:0 2px 12px rgba(0,0,0,0.08); margin-bottom:20px; }
+.filter-bar { background:white; border-radius:12px; padding:20px; box-shadow:0 2px 12px rgba(0,0,0,0.06); margin-bottom:20px; }
+</style>
+<div class="container-fluid">
+
+    <!-- Header -->
+    <div class="search-header">
+        <h3 class="mb-1">🔍 Advanced Search</h3>
+        <p class="opacity-75 mb-0">Search across students, courses and instructors with filters</p>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="filter-bar">
+        <form method="GET" action="{{ url_for('advanced_search') }}">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">🔍 Search</label>
+                    <input type="text" class="form-control form-control-lg" name="q"
+                           value="{{ query }}" placeholder="Name, ID, email, course...">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">📂 Type</label>
+                    <select class="form-select" name="type">
+                        <option value="all" {{ 'selected' if search_type=='all' }}>All</option>
+                        <option value="students" {{ 'selected' if search_type=='students' }}>Students</option>
+                        <option value="courses" {{ 'selected' if search_type=='courses' }}>Courses</option>
+                        <option value="instructors" {{ 'selected' if search_type=='instructors' }}>Instructors</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">🏢 Department</label>
+                    <select class="form-select" name="department_id">
+                        <option value="">All Departments</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {{ 'selected' if department_id == dept.id|string }}>
+                            {{ dept.dept_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-semibold">📌 Status</label>
+                    <select class="form-select" name="status">
+                        <option value="">All Status</option>
+                        <option value="active" {{ 'selected' if status=='active' }}>Active</option>
+                        <option value="inactive" {{ 'selected' if status=='inactive' }}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100 btn-lg">Search</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    {% if query or department_id or status %}
+
+        <!-- Students Results -->
+        {% if results.students %}
+        <div class="result-card card">
+            <div class="card-header d-flex justify-content-between align-items-center"
+                 style="background:#0f3460;color:white;">
+                <h6 class="mb-0">👨‍🎓 Students ({{ results.students|length }} found)</h6>
+                <a href="{{ url_for('export_students') }}" class="btn btn-light btn-sm">
+                    📥 Export Excel
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr><th>Student ID</th><th>Name</th><th>Email</th><th>Department</th><th>Status</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for s in results.students %}
+                        <tr>
+                            <td><span class="badge bg-primary">{{ s.student_id }}</span></td>
+                            <td>{{ s.first_name }} {{ s.last_name }}</td>
+                            <td>{{ s.email }}</td>
+                            <td>{{ s.dept_name or 'N/A' }}</td>
+                            <td><span class="badge bg-{{ 'success' if s.status=='active' else 'secondary' }}">{{ s.status }}</span></td>
+                            <td>
+                                <a href="{{ url_for('student_edit', id=s.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Courses Results -->
+        {% if results.courses %}
+        <div class="result-card card">
+            <div class="card-header d-flex justify-content-between align-items-center"
+                 style="background:#198754;color:white;">
+                <h6 class="mb-0">📚 Courses ({{ results.courses|length }} found)</h6>
+                <a href="{{ url_for('export_courses') }}" class="btn btn-light btn-sm">
+                    📥 Export Excel
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr><th>Code</th><th>Course Name</th><th>Department</th><th>Instructor</th><th>Status</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for c in results.courses %}
+                        <tr>
+                            <td><span class="badge bg-success">{{ c.course_code }}</span></td>
+                            <td>{{ c.course_name }}</td>
+                            <td>{{ c.dept_name or 'N/A' }}</td>
+                            <td>{{ c.instructor_name or 'N/A' }}</td>
+                            <td><span class="badge bg-{{ 'success' if c.status=='active' else 'secondary' }}">{{ c.status }}</span></td>
+                            <td>
+                                <a href="{{ url_for('course_edit', id=c.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Instructors Results -->
+        {% if results.instructors %}
+        <div class="result-card card">
+            <div class="card-header" style="background:#6f42c1;color:white;">
+                <h6 class="mb-0">👨‍🏫 Instructors ({{ results.instructors|length }} found)</h6>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr><th>Instructor ID</th><th>Name</th><th>Email</th><th>Department</th><th>Status</th><th>Actions</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for i in results.instructors %}
+                        <tr>
+                            <td><span class="badge bg-purple" style="background:#6f42c1;">{{ i.instructor_id }}</span></td>
+                            <td>{{ i.first_name }} {{ i.last_name }}</td>
+                            <td>{{ i.email }}</td>
+                            <td>{{ i.dept_name or 'N/A' }}</td>
+                            <td><span class="badge bg-{{ 'success' if i.status=='active' else 'secondary' }}">{{ i.status }}</span></td>
+                            <td>
+                                <a href="{{ url_for('instructor_edit', id=i.id) }}" class="btn btn-warning btn-sm">Edit</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not results.students and not results.courses and not results.instructors %}
+        <div class="text-center py-5">
+            <div style="font-size:4rem;">🔍</div>
+            <h5 class="mt-3">No results found</h5>
+            <p class="text-muted">Try different search terms or filters</p>
+        </div>
+        {% endif %}
+
+    {% else %}
+    <div class="text-center py-5">
+        <div style="font-size:4rem;">🔍</div>
+        <h5 class="mt-3">Enter search terms above</h5>
+        <p class="text-muted">Search by name, ID, email, course code or use filters</p>
+    </div>
+    {% endif %}
+
+    <div class="mt-3">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">← Dashboard</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Course Applications{% endblock %}
+{% block page_title %}Course Applications{% endblock %}
+
+{% block content %}
+<style>
+.welcome-banner { background:linear-gradient(135deg,#7c3aed,#4f46e5); border-radius:16px; padding:24px 28px; color:white; margin-bottom:24px; position:relative; overflow:hidden; }
+.welcome-banner::before { content:''; position:absolute; top:-40px; right:-40px; width:180px; height:180px; background:rgba(255,255,255,0.07); border-radius:50%; }
+.welcome-banner h2 { font-size:1.4rem; font-weight:700; margin:0 0 4px; }
+.welcome-banner p { opacity:0.85; margin:0; font-size:0.875rem; }
+.filter-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+.filter-tab { padding:8px 18px; border-radius:10px; font-size:0.85rem; font-weight:600; text-decoration:none;
+              background:var(--surface); border:1px solid var(--border); color:var(--text-secondary); transition:all 0.15s; }
+.filter-tab:hover { background:var(--primary-light); color:var(--primary); }
+.filter-tab.active { background:var(--primary); color:white; border-color:var(--primary); }
+.status-pill { display:inline-flex; align-items:center; gap:5px; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; }
+.status-pending  { background:#fef3c7; color:#d97706; }
+.status-approved { background:#dcfce7; color:#16a34a; }
+.status-rejected { background:#fee2e2; color:#dc2626; }
+</style>
+
+<!-- Header -->
+<div class="welcome-banner">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h2>📝 Course Applications</h2>
+            <p>Review and manage student course applications</p>
+        </div>
+        <div class="d-flex gap-3" style="font-size:0.9rem;">
+            <div style="text-align:center;">
+                <div style="font-size:1.8rem;font-weight:800;line-height:1;">{{ status_counts.get('pending', 0) }}</div>
+                <div style="opacity:0.75;font-size:0.75rem;">Pending</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:1.8rem;font-weight:800;line-height:1;">{{ status_counts.get('approved', 0) }}</div>
+                <div style="opacity:0.75;font-size:0.75rem;">Approved</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:1.8rem;font-weight:800;line-height:1;">{{ status_counts.get('rejected', 0) }}</div>
+                <div style="opacity:0.75;font-size:0.75rem;">Rejected</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Tabs -->
+<div class="filter-tabs">
+    <a href="{{ url_for('admin_applications', status='pending') }}"
+       class="filter-tab {{ 'active' if status_filter == 'pending' }}">
+       ⏳ Pending ({{ status_counts.get('pending', 0) }})
+    </a>
+    <a href="{{ url_for('admin_applications', status='approved') }}"
+       class="filter-tab {{ 'active' if status_filter == 'approved' }}">
+       ✅ Approved ({{ status_counts.get('approved', 0) }})
+    </a>
+    <a href="{{ url_for('admin_applications', status='rejected') }}"
+       class="filter-tab {{ 'active' if status_filter == 'rejected' }}">
+       ❌ Rejected ({{ status_counts.get('rejected', 0) }})
+    </a>
+    <a href="{{ url_for('admin_applications', status='all') }}"
+       class="filter-tab {{ 'active' if status_filter == 'all' }}">
+       📋 All
+    </a>
+</div>
+
+<!-- Applications Table -->
+<div class="card">
+    <div class="card-header">
+        <span>{{ status_filter|title }} Applications</span>
+        <span class="badge bg-primary">{{ applications|length }}</span>
+    </div>
+    <div class="card-body p-0">
+        {% if applications %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Student</th>
+                        <th>Course</th>
+                        <th>Department</th>
+                        <th>Reason</th>
+                        <th>Applied On</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in applications %}
+                    <tr>
+                        <td>
+                            <div style="font-weight:600;font-size:0.875rem;">{{ app.student_first }} {{ app.student_last }}</div>
+                            <div style="font-size:0.75rem;color:var(--text-muted);">{{ app.student_code }}</div>
+                        </td>
+                        <td>
+                            <div style="font-weight:600;font-size:0.875rem;">
+                                <span class="badge bg-primary me-1">{{ app.course_code }}</span>
+                                {{ app.course_name }}
+                            </div>
+                            <div style="font-size:0.72rem;color:var(--text-muted);">{{ app.credits }} credits</div>
+                        </td>
+                        <td style="font-size:0.85rem;">{{ app.dept_name or '—' }}</td>
+                        <td style="font-size:0.82rem;color:var(--text-secondary);max-width:180px;">
+                            {{ app.reason[:80] if app.reason else '—' }}{% if app.reason and app.reason|length > 80 %}...{% endif %}
+                        </td>
+                        <td style="font-size:0.85rem;">{{ app.created_at[:10] if app.created_at else '—' }}</td>
+                        <td>
+                            {% if app.status == 'pending' %}
+                            <span class="status-pill status-pending">⏳ Pending</span>
+                            {% elif app.status == 'approved' %}
+                            <span class="status-pill status-approved">✅ Approved</span>
+                            {% elif app.status == 'rejected' %}
+                            <span class="status-pill status-rejected">❌ Rejected</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if app.status == 'pending' %}
+                            {% set approve_onclick = 'onclick="openActionModal(' ~ app.id ~ ', \'approve\', \'' ~ app.student_first ~ ' ' ~ app.student_last ~ '\', \'' ~ app.course_code ~ '\')"' %}
+                            {% set reject_onclick = 'onclick="openActionModal(' ~ app.id ~ ', \'reject\', \'' ~ app.student_first ~ ' ' ~ app.student_last ~ '\', \'' ~ app.course_code ~ '\')"' %}
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-success btn-sm" title="Approve" {{ approve_onclick | safe }}>
+                                    ✅
+                                </button>
+                                <button class="btn btn-danger btn-sm" title="Reject" {{ reject_onclick | safe }}>
+                                    ❌
+                                </button>
+                            </div>
+                            {% else %}
+                            <span style="font-size:0.78rem;color:var(--text-muted);">
+                                {{ app.reviewed_at[:10] if app.reviewed_at else '' }}
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <div style="font-size:3rem;margin-bottom:12px;">
+                {% if status_filter == 'pending' %}⏳{% elif status_filter == 'approved' %}✅{% elif status_filter == 'rejected' %}❌{% else %}📋{% endif %}
+            </div>
+            <h5>No {{ status_filter }} applications</h5>
+            <p class="text-muted">There are no {{ status_filter }} course applications at this time.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Action Modal -->
+<div class="modal fade" id="actionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius:16px;border:none;">
+            <div class="modal-header" style="border-bottom:1px solid var(--border);padding:20px 24px;">
+                <h5 class="modal-title" id="actionModalTitle" style="font-weight:600;"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="actionForm" method="POST" action="">
+                <div class="modal-body" style="padding:24px;">
+                    <p id="actionModalDesc" style="font-size:0.9rem;margin-bottom:16px;"></p>
+                    <div class="mb-3">
+                        <label class="form-label">Note to student (optional)</label>
+                        <textarea class="form-control" name="admin_note" rows="2"
+                                  placeholder="Add a note for the student..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid var(--border);padding:16px 24px;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" id="actionBtn" class="btn"></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openActionModal(appId, action, studentName, courseCode) {
+    const form = document.getElementById('actionForm');
+    const title = document.getElementById('actionModalTitle');
+    const desc = document.getElementById('actionModalDesc');
+    const btn = document.getElementById('actionBtn');
+
+    if (action === 'approve') {
+        form.action = '/admin/applications/' + appId + '/approve';
+        title.textContent = '✅ Approve Application';
+        desc.textContent = 'Approve ' + studentName + "'s application for " + courseCode + '? The student will be automatically enrolled.';
+        btn.textContent = 'Approve & Enroll';
+        btn.className = 'btn btn-success';
+    } else {
+        form.action = '/admin/applications/' + appId + '/reject';
+        title.textContent = '❌ Reject Application';
+        desc.textContent = 'Reject ' + studentName + "'s application for " + courseCode + '?';
+        btn.textContent = 'Reject Application';
+        btn.className = 'btn btn-danger';
+    }
+
+    new bootstrap.Modal(document.getElementById('actionModal')).show();
+}
+</script>
+{% endblock %}

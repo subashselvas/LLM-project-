@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}My Applications{% endblock %}
+{% block page_title %}My Applications{% endblock %}
+
+{% block content %}
+<style>
+.welcome-banner { background:linear-gradient(135deg,#1a56db,#0891b2); border-radius:16px; padding:24px 28px; color:white; margin-bottom:24px; position:relative; overflow:hidden; }
+.welcome-banner::before { content:''; position:absolute; top:-40px; right:-40px; width:180px; height:180px; background:rgba(255,255,255,0.07); border-radius:50%; }
+.welcome-banner h2 { font-size:1.4rem; font-weight:700; margin:0 0 4px; }
+.welcome-banner p { opacity:0.85; margin:0; font-size:0.875rem; }
+.status-pill { display:inline-flex; align-items:center; gap:5px; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; }
+.status-pending  { background:#fef3c7; color:#d97706; }
+.status-approved { background:#dcfce7; color:#16a34a; }
+.status-rejected { background:#fee2e2; color:#dc2626; }
+</style>
+
+<!-- Header -->
+<div class="welcome-banner">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h2>📋 My Course Applications</h2>
+            <p>Track the status of your course applications</p>
+        </div>
+        <a href="{{ url_for('student_apply_courses') }}"
+           style="background:rgba(255,255,255,0.2);color:white;border:none;border-radius:10px;
+                  padding:10px 20px;font-weight:600;text-decoration:none;font-size:0.875rem;">
+            📚 Browse Courses
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span>My Applications</span>
+        <span class="badge bg-primary">{{ applications|length }} total</span>
+    </div>
+    <div class="card-body p-0">
+        {% if applications %}
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>Department</th>
+                    <th>Credits</th>
+                    <th>Instructor</th>
+                    <th>Applied On</th>
+                    <th>Status</th>
+                    <th>Admin Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for app in applications %}
+                <tr>
+                    <td>
+                        <div style="font-weight:600;font-size:0.875rem;">
+                            <span class="badge bg-primary me-1">{{ app.course_code }}</span>
+                            {{ app.course_name }}
+                        </div>
+                    </td>
+                    <td style="font-size:0.85rem;">{{ app.dept_name or '—' }}</td>
+                    <td style="font-size:0.85rem;">{{ app.credits }}</td>
+                    <td style="font-size:0.85rem;">{{ app.instructor_first or '' }} {{ app.instructor_last or 'TBA' }}</td>
+                    <td style="font-size:0.85rem;">{{ app.created_at[:10] if app.created_at else '—' }}</td>
+                    <td>
+                        {% if app.status == 'pending' %}
+                        <span class="status-pill status-pending">⏳ Pending</span>
+                        {% elif app.status == 'approved' %}
+                        <span class="status-pill status-approved">✅ Approved</span>
+                        {% elif app.status == 'rejected' %}
+                        <span class="status-pill status-rejected">❌ Rejected</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:0.82rem;color:var(--text-secondary);max-width:200px;">
+                        {{ app.admin_note or '—' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="text-center py-5">
+            <div style="font-size:3rem;margin-bottom:12px;">📋</div>
+            <h5>No applications yet</h5>
+            <p class="text-muted mb-3">You haven't applied for any courses yet.</p>
+            <a href="{{ url_for('student_apply_courses') }}" class="btn btn-primary">
+                📚 Browse Available Courses
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

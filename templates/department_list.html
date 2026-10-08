@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Departments{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-building"></i> Departments Management</h2>
+                <a href="{{ url_for('department_add') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add New Department
+                </a>
+            </div>
+            <hr>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Departments List</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Code</th>
+                                    <th>Department Name</th>
+                                    <th>Head of Department</th>
+                                    <th>Students</th>
+                                    <th>Instructors</th>
+                                    <th>Courses</th>
+                                    <th>Budget</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for dept in departments %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-primary">{{ dept.dept_code }}</span>
+                                    </td>
+                                    <td>{{ dept.dept_name }}</td>
+                                    <td>{{ dept.head_of_department or 'N/A' }}</td>
+                                    <td>{{ dept.student_count }}</td>
+                                    <td>{{ dept.instructor_count }}</td>
+                                    <td>{{ dept.course_count }}</td>
+                                    <td>${{ '{:,.2f}'.format(dept.budget) if dept.budget else '0.00' }}</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('department_edit', id=dept.id) }}"
+                                               class="btn btn-warning" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <form method="POST"
+                                                  action="{{ url_for('department_delete', id=dept.id) }}"
+                                                  onsubmit="return confirm('Delete this department?')"
+                                                  style="display:inline;">
+                                                <button type="submit" class="btn btn-danger" title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">No departments found</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

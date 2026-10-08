@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-cog"></i> System Settings</h2>
+            <hr>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Configuration Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('settings') }}">
+                        {% for setting in settings %}
+                        <div class="mb-3">
+                            <label for="setting_{{ setting.setting_key }}" class="form-label">
+                                {{ setting.setting_key|replace('_', ' ')|title }}
+                                <small class="text-muted">({{ setting.description }})</small>
+                            </label>
+                            
+                            {% if setting.setting_type == 'boolean' %}
+                            <select class="form-select" id="setting_{{ setting.setting_key }}" 
+                                    name="setting_{{ setting.setting_key }}">
+                                <option value="true" {{ 'selected' if setting.setting_value == 'true' }}>Enabled</option>
+                                <option value="false" {{ 'selected' if setting.setting_value == 'false' }}>Disabled</option>
+                            </select>
+                            
+                            {% elif setting.setting_type == 'integer' %}
+                            <input type="number" class="form-control" id="setting_{{ setting.setting_key }}" 
+                                   name="setting_{{ setting.setting_key }}" value="{{ setting.setting_value }}">
+                            
+                            {% else %}
+                            <input type="text" class="form-control" id="setting_{{ setting.setting_key }}" 
+                                   name="setting_{{ setting.setting_key }}" value="{{ setting.setting_value }}">
+                            {% endif %}
+                            
+                            <small class="text-muted">Last updated: {{ setting.updated_at }}</small>
+                        </div>
+                        {% endfor %}
+                        
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

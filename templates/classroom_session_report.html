@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Session Report — {{ classroom.course_code }}{% endblock %}
+{% block page_title %}Session Report{% endblock %}
+
+{% block content %}
+<style>
+.report-header { background:linear-gradient(135deg,#1a56db,#0891b2); border-radius:16px;
+                 padding:24px 28px; color:white; margin-bottom:24px; }
+.stat-pill { background:rgba(255,255,255,0.15); border-radius:10px; padding:12px 18px;
+             display:inline-block; text-align:center; min-width:100px; }
+.stat-pill .val { font-size:1.6rem; font-weight:700; line-height:1; }
+.stat-pill .lbl { font-size:0.7rem; opacity:0.85; margin-top:2px; }
+.ai-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px;
+            border-radius:20px; font-size:0.72rem; font-weight:700; }
+.ai-present    { background:#dcfce7; color:#16a34a; }
+.ai-absent     { background:#f1f5f9; color:#64748b; }
+.ai-kicked     { background:#fee2e2; color:#dc2626; }
+.ai-warned     { background:#fef3c7; color:#d97706; }
+.ai-suspicious { background:#fef3c7; color:#d97706; }
+.screen-bar { height:6px; border-radius:3px; background:#e2e8f0; width:80px; overflow:hidden; display:inline-block; vertical-align:middle; margin-left:6px; }
+.screen-fill { height:100%; border-radius:3px; }
+</style>
+
+<!-- Report Header -->
+<div class="report-header">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+            <h3 class="mb-1">📊 AI Session Report</h3>
+            <p class="mb-0 opacity-75">{{ classroom.course_code }} — {{ classroom.session_title }}</p>
+            <p class="mb-0 opacity-60" style="font-size:0.8rem;">
+                Started: {{ classroom.started_at or 'N/A' }} |
+                Ended: {{ classroom.ended_at or 'N/A' }} |
+                Duration: {{ class_duration }} min
+            </p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <div class="stat-pill"><div class="val">{{ total_enrolled }}</div><div class="lbl">Enrolled</div></div>
+            <div class="stat-pill"><div class="val">{{ total_present }}</div><div class="lbl">Present</div></div>
+            <div class="stat-pill"><div class="val">{{ total_absent }}</div><div class="lbl">Absent</div></div>
+            <div class="stat-pill"><div class="val" style="color:#fca5a5;">{{ total_kicked }}</div><div class="lbl">Kicked</div></div>
+            <div class="stat-pill"><div class="val" style="color:#fde68a;">{{ total_suspicious }}</div><div class="lbl">Suspicious</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Attendance saved notice -->
+<div class="alert" style="background:#f0fdf4;border-left:4px solid #16a34a;color:#166534;margin-bottom:20px;">
+    <i class="fas fa-robot"></i>
+    <strong>AI Auto-Attendance:</strong> Attendance has been automatically saved to the attendance records based on session data.
+</div>
+
+{% if classroom.notes %}
+<div class="card mb-4">
+    <div class="card-header"><i class="fas fa-sticky-note"></i> Class Notes</div>
+    <div class="card-body"><p class="mb-0" style="white-space:pre-wrap;">{{ classroom.notes }}</p></div>
+</div>
+{% endif %}
+
+<!-- Detailed Student Report -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>👥 Student Performance Report</span>
+        <span class="badge bg-primary">{{ student_reports|length }} students</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>AI Status</th>
+                    <th>Questions</th>
+                    <th>Answered</th>
+                    <th>Correct</th>
+                    <th>Wrong</th>
+                    <th>Missed</th>
+                    <th>Avg Time</th>
+                    <th>Screen Time</th>
+                    <th>Joined</th>
+                    <th>Left</th>
+                    <th>Flags</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in student_reports %}
+                <tr class="{{ 'table-danger' if r.ai_status == 'kicked' else 'table-warning' if r.ai_status in ['warned','suspicious'] else '' }}">
+                    <td>
+                        <div style="font-weight:600;font-size:0.875rem;">{{ r.name }}</div>
+                        <div style="font-size:0.75rem;color:var(--text-3);">{{ r.student_id }}</div>
+                    </td>
+                    <td>
+                        <span class="ai-badge ai-{{ r.ai_status }}">
+                            {% if r.ai_status == 'present' %}✅ Present
+                            {% elif r.ai_status == 'absent' %}⬜ Absent
+                            {% elif r.ai_status == 'kicked' %}🚫 Kicked
+                            {% elif r.ai_status == 'warned' %}⚠️ Warned
+                            {% elif r.ai_status == 'suspicious' %}🔍 Suspicious
+                            {% endif %}
+                        </span>
+                        <div style="font-size:0.7rem;color:var(--text-3);margin-top:2px;">{{ r.ai_reason }}</div>
+                    </td>
+                    <td class="text-center">
+                        <span style="font-weight:600;">{{ r.total_questions }}</span>
+                    </td>
+                    <td class="text-center">
+                        <span style="color:var(--success);font-weight:600;">{{ r.answered }}</span>
+                    </td>
+                    <td class="text-center">
+                        <span style="color:#16a34a;font-weight:600;">{{ r.correct }}</span>
+                    </td>
+                    <td class="text-center">
+                        <span style="color:#dc2626;font-weight:600;">{{ r.wrong }}</span>
+                    </td>
+                    <td class="text-center">
+                        <span style="color:#d97706;font-weight:600;">{{ r.missed }}</span>
+                    </td>
+                    <td class="text-center">
+                        {{ r.avg_response_time }}s
+                    </td>
+                    <td>
+                        {% if r.screen_minutes is not none %}
+                            <span style="font-size:0.8rem;font-weight:600;">{{ r.screen_minutes }}m</span>
+                            <div class="screen-bar">
+                                <div class="screen-fill"
+                                     style="width:{{ r.screen_pct }}%;
+                                            background:{{ '#16a34a' if r.screen_pct >= 80 else '#d97706' if r.screen_pct >= 50 else '#dc2626' }};"></div>
+                            </div>
+                            <span style="font-size:0.7rem;color:var(--text-3);">{{ r.screen_pct }}%</span>
+                        {% else %}
+                            <span style="color:var(--text-3);">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:0.78rem;">
+                        {{ r.joined_at[:16] if r.joined_at and r.joined_at != '—' else '—' }}
+                    </td>
+                    <td style="font-size:0.78rem;">
+                        {{ r.left_at[:16] if r.left_at and r.left_at != '—' else '—' }}
+                    </td>
+                    <td>
+                        <div style="display:flex;flex-direction:column;gap:2px;">
+                            {% if r.was_kicked %}
+                            <span class="ai-badge ai-kicked">🚫 Kicked</span>
+                            {% endif %}
+                            {% if r.warned %}
+                            <span class="ai-badge ai-warned">⚠️ Warned</span>
+                            {% endif %}
+                            {% if r.ai_status == 'suspicious' %}
+                            <span class="ai-badge ai-suspicious">🔍 Low Screen</span>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="12" class="text-center py-4 text-muted">No students enrolled</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="mt-4 d-flex gap-2">
+    <a href="{{ url_for('classroom_sessions') }}" class="btn btn-secondary">
+        ← All Sessions
+    </a>
+    <a href="{{ url_for('classroom_teacher', session_id=session_id) }}" class="btn btn-outline-primary">
+        Re-enter Session
+    </a>
+</div>
+{% endblock %}

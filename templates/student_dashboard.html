@@ -1,0 +1,633 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard — EduCore{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Premium Student Dashboard ───────────────────────── */
+
+/* Hero Banner */
+.hero-banner {
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 40%, #0891b2 100%);
+    border-radius: 20px;
+    padding: 28px 32px;
+    color: white;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(29,78,216,0.3);
+}
+.hero-banner::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+}
+.hero-banner::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: 20%;
+    width: 280px; height: 280px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+}
+.hero-inner { position: relative; z-index: 1; }
+.hero-avatar {
+    width: 52px; height: 52px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.2);
+    flex-shrink: 0;
+}
+.hero-name { font-size: 1.35rem; font-weight: 700; margin: 0; letter-spacing: -0.3px; }
+.hero-sub  { font-size: 0.82rem; opacity: 0.75; margin: 2px 0 0; }
+.hero-gpa-pill {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 12px;
+    padding: 10px 18px;
+    text-align: center;
+    backdrop-filter: blur(8px);
+    flex-shrink: 0;
+}
+.hero-gpa-val { font-size: 2rem; font-weight: 800; line-height: 1; }
+.hero-gpa-lbl { font-size: 0.7rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.8px; }
+
+/* Live Alert */
+.live-alert {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.25);
+    border-left: 3px solid #ef4444;
+    border-radius: 12px;
+    padding: 12px 18px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.live-dot {
+    width: 8px; height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: livePulse 1.2s ease-in-out infinite;
+}
+@keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.8)} }
+
+/* Stat Cards */
+.stat-card-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
+@media(max-width:768px){ .stat-card-grid{ grid-template-columns: repeat(2,1fr); } }
+.stat-prem {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-prem:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,0.3); }
+.stat-prem::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 60px; height: 60px;
+    border-radius: 0 16px 0 60px;
+    opacity: 0.06;
+}
+.stat-prem.blue::before  { background: #3b82f6; }
+.stat-prem.green::before { background: #22c55e; }
+.stat-prem.amber::before { background: #f59e0b; }
+.stat-prem.red::before   { background: #ef4444; }
+.stat-prem-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    margin-bottom: 14px;
+}
+.stat-prem.blue  .stat-prem-icon { background: rgba(59,130,246,0.12); }
+.stat-prem.green .stat-prem-icon { background: rgba(34,197,94,0.12); }
+.stat-prem.amber .stat-prem-icon { background: rgba(245,158,11,0.12); }
+.stat-prem.red   .stat-prem-icon { background: rgba(239,68,68,0.12); }
+.stat-prem-val  { font-size: 1.8rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+.stat-prem-lbl  { font-size: 0.73rem; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.6px; }
+.stat-prem-trend { font-size: 0.72rem; margin-top: 6px; }
+
+/* Section title */
+.section-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* Course rows */
+.course-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 14px;
+    transition: background 0.15s;
+}
+.course-row:last-child { border-bottom: none; }
+.course-row:hover { background: var(--surface-2); border-radius: 10px; padding-left: 10px; padding-right: 10px; }
+.course-code-pill {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--primary-light);
+    color: var(--primary);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.course-bar-track {
+    height: 4px;
+    background: var(--surface-3);
+    border-radius: 2px;
+    overflow: hidden;
+    flex: 1;
+}
+.course-bar-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+.att-pct {
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    width: 38px;
+    text-align: right;
+}
+
+/* Action Grid */
+.action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+    border-radius: 12px;
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    transition: all 0.18s;
+}
+.action-btn:hover {
+    background: var(--surface-3);
+    color: var(--text-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.action-btn.primary {
+    background: linear-gradient(135deg, #1d4ed8, #0891b2);
+    color: white;
+    border-color: transparent;
+    grid-column: span 2;
+}
+.action-btn.primary:hover { filter: brightness(1.1); color: white; }
+.action-btn-icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    background: rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+.action-btn:not(.primary) .action-btn-icon {
+    background: var(--surface-3);
+}
+
+/* Live Classes Panel */
+.live-class-item {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+}
+.live-class-item:last-child { border-bottom: none; }
+.live-join-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #16a34a, #0d9488);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: filter 0.15s;
+}
+.live-join-btn:hover { filter: brightness(1.12); color: white; }
+.cant-attend-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    background: rgba(239,68,68,0.1);
+    color: #f87171;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid rgba(239,68,68,0.2);
+    transition: background 0.15s;
+}
+.cant-attend-btn:hover { background: rgba(239,68,68,0.18); color: #f87171; }
+
+/* Badge grid */
+.badge-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 8px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    text-align: center;
+    transition: transform 0.2s;
+    cursor: default;
+}
+.badge-item:hover { transform: scale(1.05); }
+
+/* Attendance table */
+.att-table td, .att-table th { padding: 10px 16px; vertical-align: middle; }
+.att-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.73rem;
+    font-weight: 600;
+}
+.att-status.present { background: rgba(34,197,94,0.12);  color: #4ade80; }
+.att-status.absent  { background: rgba(239,68,68,0.12);  color: #f87171; }
+.att-status.late    { background: rgba(245,158,11,0.12); color: #fbbf24; }
+.att-status.excused { background: rgba(6,182,212,0.12);  color: #22d3ee; }
+
+/* Calendar */
+.fc { color: var(--text-primary) !important; }
+.fc .fc-toolbar-title { font-size: 1rem !important; font-weight: 700; color: var(--text-primary); }
+.fc .fc-button { background: var(--surface-2) !important; border-color: var(--border) !important; color: var(--text-secondary) !important; font-size: 0.78rem !important; }
+.fc .fc-button:hover { background: var(--surface-3) !important; color: var(--text-primary) !important; }
+.fc .fc-button-active { background: var(--primary) !important; border-color: var(--primary) !important; color: white !important; }
+.fc-theme-standard td, .fc-theme-standard th { border-color: var(--border) !important; }
+.fc .fc-daygrid-day { background: var(--surface); }
+.fc .fc-daygrid-day:hover { background: var(--surface-2); }
+.fc .fc-daygrid-day-number { color: var(--text-secondary); font-size: 0.8rem; }
+.fc .fc-day-today { background: rgba(59,130,246,0.06) !important; }
+.fc .fc-day-today .fc-daygrid-day-number { color: var(--primary); font-weight: 700; }
+.fc .fc-col-header-cell { background: var(--surface-2); }
+.fc .fc-col-header-cell-cushion { color: var(--text-muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Glassmorphic card variant */
+.glass-card {
+    background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.95));
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    color: white;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── HERO BANNER ────────────────────────────── -->
+<div class="hero-banner mb-4">
+    <div class="hero-inner d-flex align-items-center justify-content-between gap-3 flex-wrap">
+        <div class="d-flex align-items-center gap-14" style="gap:14px;">
+            <div class="hero-avatar">🎓</div>
+            <div>
+                <p class="hero-name">Welcome back, {{ student.first_name }}!</p>
+                <p class="hero-sub">{{ student.student_id }} &nbsp;·&nbsp; {{ student.dept_name or 'Department not assigned' }}</p>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            {% if live_classes %}
+            <div style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.4);border-radius:10px;padding:8px 14px;font-size:0.8rem;font-weight:600;">
+                <span class="live-dot d-inline-block me-1"></span>
+                {{ live_classes|length }} Class{{ 'es' if live_classes|length > 1 }} Live
+            </div>
+            {% endif %}
+            <div class="hero-gpa-pill">
+                <div class="hero-gpa-val">{{ gpa }}</div>
+                <div class="hero-gpa-lbl">GPA</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── STAT CARDS ─────────────────────────────── -->
+<div class="stat-card-grid">
+    <div class="stat-prem blue">
+        <div class="stat-prem-icon">📚</div>
+        <div class="stat-prem-val">{{ courses|length }}</div>
+        <div class="stat-prem-lbl">Enrolled Courses</div>
+    </div>
+    <div class="stat-prem green">
+        <div class="stat-prem-icon">✅</div>
+        <div class="stat-prem-val">{{ attendance|selectattr('status','equalto','present')|list|length }}</div>
+        <div class="stat-prem-lbl">Classes Attended</div>
+    </div>
+    <div class="stat-prem amber">
+        <div class="stat-prem-icon">🎯</div>
+        <div class="stat-prem-val">{{ gpa }}</div>
+        <div class="stat-prem-lbl">Current GPA</div>
+    </div>
+    <div class="stat-prem red">
+        <div class="stat-prem-icon">❌</div>
+        <div class="stat-prem-val">{{ attendance|selectattr('status','equalto','absent')|list|length }}</div>
+        <div class="stat-prem-lbl">Absences</div>
+    </div>
+</div>
+
+<!-- ── MAIN GRID ──────────────────────────────── -->
+<div class="row g-4">
+
+    <!-- LEFT COL (8/12) -->
+    <div class="col-lg-8">
+
+        <!-- My Courses -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-layer-group text-primary"></i>
+                    <span style="font-weight:700;font-size:0.9rem;">My Courses</span>
+                </div>
+                <a href="{{ url_for('student_courses') }}" class="btn btn-sm" style="font-size:0.75rem;padding:5px 14px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-secondary);border-radius:8px;">View All →</a>
+            </div>
+            <div class="card-body" style="padding: 8px 0;">
+                {% if courses %}
+                    {% for course in courses %}
+                    {% set analysis = attendance_analysis.get(course.id, {}) %}
+                    {% set pct = analysis.attendance_pct or 0 %}
+                    {% set col = analysis.badge_color or '#64748b' %}
+                    <div class="course-row px-4">
+                        <div style="flex:1;min-width:0;">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="course-code-pill">{{ course.course_code }}</span>
+                                <span style="font-weight:600;font-size:0.875rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ course.course_name }}</span>
+                            </div>
+                            <div style="font-size:0.73rem;color:var(--text-muted);margin-bottom:8px;">
+                                <i class="fas fa-chalkboard-teacher me-1"></i>
+                                {{ course.instructor_first }} {{ course.instructor_last or '' }}
+                                {% if course.grade %}&nbsp;·&nbsp; Grade: <strong style="color:var(--text-primary);">{{ course.grade }}</strong>{% endif %}
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="course-bar-track">
+                                    <div class="course-bar-fill" data-width="{{ pct }}" data-color="{{ col }}"></div>
+                                </div>
+                                <span class="att-pct" data-color="{{ col }}">{{ pct }}%</span>
+                            </div>
+                        </div>
+                        <div style="flex-shrink:0;">
+                            {% if analysis.risk_badge %}
+                            <span class="risk-badge" data-color="{{ col }}">
+                                {{ analysis.risk_badge }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div style="padding:32px;text-align:center;color:var(--text-muted);">
+                    <div style="font-size:2rem;margin-bottom:8px;">📚</div>
+                    <div style="font-size:0.875rem;">No courses enrolled yet.</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Attendance -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-calendar-check text-primary"></i>
+                    <span style="font-weight:700;font-size:0.9rem;">Recent Attendance</span>
+                </div>
+                <a href="{{ url_for('student_attendance') }}" class="btn btn-sm" style="font-size:0.75rem;padding:5px 14px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-secondary);border-radius:8px;">View All →</a>
+            </div>
+            <div style="overflow:hidden;border-radius:0 0 var(--radius-lg) var(--radius-lg);">
+                {% if attendance %}
+                <table class="table att-table mb-0">
+                    <thead>
+                        <tr>
+                            <th style="font-size:0.7rem;letter-spacing:0.7px;text-transform:uppercase;color:var(--text-muted);background:var(--surface-2);">Course</th>
+                            <th style="font-size:0.7rem;letter-spacing:0.7px;text-transform:uppercase;color:var(--text-muted);background:var(--surface-2);">Date</th>
+                            <th style="font-size:0.7rem;letter-spacing:0.7px;text-transform:uppercase;color:var(--text-muted);background:var(--surface-2);">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for a in attendance[:8] %}
+                        <tr>
+                            <td style="font-size:0.85rem;font-weight:500;">{{ a.course_name }}</td>
+                            <td style="font-size:0.82rem;color:var(--text-muted);">{{ a.date }}</td>
+                            <td>
+                                <span class="att-status {{ a.status }}">
+                                    {{ '●' }} {{ a.status|title }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="padding:32px;text-align:center;color:var(--text-muted);">
+                    <div style="font-size:2rem;margin-bottom:8px;">📅</div>
+                    <div style="font-size:0.875rem;">No attendance records yet.</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RIGHT COL (4/12) -->
+    <div class="col-lg-4">
+
+        <!-- Live Classes -->
+        <div class="card mb-4" style="border-color: rgba(239,68,68,0.25);">
+            <div class="card-header" style="background:rgba(239,68,68,0.08);border-bottom-color:rgba(239,68,68,0.2);">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="live-dot"></span>
+                    <span style="font-weight:700;font-size:0.88rem;color:#f87171;">Live Classes</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if live_classes %}
+                    {% for lc in live_classes %}
+                    <div class="live-class-item">
+                        <div style="font-weight:700;font-size:0.875rem;margin-bottom:3px;">
+                            {{ lc.course_code }} — {{ lc.session_title }}
+                        </div>
+                        <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;">
+                            <i class="fas fa-chalkboard-teacher me-1"></i>{{ lc.instructor_name or 'Instructor' }}
+                            &nbsp;·&nbsp; <span style="color:#4ade80;font-weight:600;">● LIVE NOW</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('classroom_respond', session_id=lc.session_id, action='join') }}" class="live-join-btn">
+                                <i class="fas fa-video"></i> Join Now
+                            </a>
+                            <a href="{{ url_for('classroom_respond', session_id=lc.session_id, action='decline') }}" class="cant-attend-btn">
+                                <i class="fas fa-times"></i> Can't Attend
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div style="padding:28px;text-align:center;color:var(--text-muted);">
+                    <div style="font-size:1.8rem;margin-bottom:8px;opacity:0.4;">📡</div>
+                    <div style="font-size:0.82rem;">No live classes right now.<br>Check back later!</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-bolt text-primary"></i>
+                    <span style="font-weight:700;font-size:0.88rem;">Quick Actions</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="action-grid">
+                    <a href="{{ url_for('student_apply_courses') }}" class="action-btn primary">
+                        <div class="action-btn-icon">📚</div>
+                        <span>Apply for Courses</span>
+                    </a>
+                    <a href="{{ url_for('student_attendance_ai') }}" class="action-btn">
+                        <div class="action-btn-icon">🤖</div>
+                        <span>AI Attendance</span>
+                    </a>
+                    <a href="{{ url_for('student_ai_insights') }}" class="action-btn">
+                        <div class="action-btn-icon">🧠</div>
+                        <span>AI Insights</span>
+                    </a>
+                    <a href="{{ url_for('student_grades') }}" class="action-btn">
+                        <div class="action-btn-icon">📊</div>
+                        <span>My Grades</span>
+                    </a>
+                    <a href="{{ url_for('student_assignments') }}" class="action-btn">
+                        <div class="action-btn-icon">📝</div>
+                        <span>Assignments</span>
+                    </a>
+                    <a href="{{ url_for('notifications') }}" class="action-btn">
+                        <div class="action-btn-icon">🔔</div>
+                        <span>Notifications
+                            {% if unread_count > 0 %}<span style="background:#ef4444;color:white;border-radius:8px;padding:1px 5px;font-size:0.65rem;margin-left:4px;">{{ unread_count }}</span>{% endif %}
+                        </span>
+                    </a>
+                    <a href="{{ url_for('student_my_applications') }}" class="action-btn">
+                        <div class="action-btn-icon">📋</div>
+                        <span>Applications</span>
+                    </a>
+                    <a href="{{ url_for('profile') }}" class="action-btn">
+                        <div class="action-btn-icon">👤</div>
+                        <span>My Profile</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Achievements -->
+        <div class="glass-card">
+            <div style="padding:16px 20px 8px;border-bottom:1px solid rgba(255,255,255,0.07);">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-trophy" style="color:#fbbf24;"></i>
+                    <span style="font-weight:700;font-size:0.88rem;">My Achievements</span>
+                </div>
+            </div>
+            <div style="padding:16px 20px;">
+                {% if student_badges %}
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                    {% for badge in student_badges %}
+                    <div class="badge-item" title="{{ badge.description }}">
+                        <div style="font-size:1.7rem;margin-bottom:4px;">{{ badge.icon }}</div>
+                        <div style="font-size:0.62rem;font-weight:600;color:#cbd5e1;line-height:1.2;">{{ badge.badge_name }}</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="text-align:center;padding:16px 0;">
+                    <div style="font-size:1.8rem;opacity:0.25;margin-bottom:8px;">🏅</div>
+                    <p style="font-size:0.78rem;color:#64748b;margin:0;line-height:1.5;">Participate in Live Classes<br>to earn badges!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ── CALENDAR ────────────────────────────────── -->
+<div class="card mt-4">
+    <div class="card-header d-flex align-items-center gap-2">
+        <i class="fas fa-calendar-alt text-primary"></i>
+        <span style="font-weight:700;font-size:0.9rem;">Assignment & Task Scheduler</span>
+    </div>
+    <div class="card-body" style="padding:20px;">
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var cal = new FullCalendar.Calendar(document.getElementById('calendar'), {
+            initialView: 'dayGridMonth',
+            events: '/api/student/calendar_events',
+            height: 520,
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,listWeek'
+            },
+            eventDisplay: 'block',
+            eventBorderColor: 'transparent',
+        });
+        cal.render();
+    });
+</script>
+
+<script>
+document.querySelectorAll('.course-bar-fill[data-width]').forEach(function(el) {
+    el.style.width = el.getAttribute('data-width') + '%';
+    el.style.background = el.getAttribute('data-color');
+});
+document.querySelectorAll('.att-pct[data-color]').forEach(function(el) {
+    el.style.color = el.getAttribute('data-color');
+});
+document.querySelectorAll('.risk-badge[data-color]').forEach(function(el) {
+    var c = el.getAttribute('data-color');
+    el.style.color = c;
+    el.style.background = c + '20';
+    el.style.display = 'inline-block';
+    el.style.padding = '3px 9px';
+    el.style.borderRadius = '20px';
+    el.style.fontSize = '0.68rem';
+    el.style.fontWeight = '700';
+});
+</script>
+
+{% endblock %}

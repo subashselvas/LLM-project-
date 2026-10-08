@@ -1,0 +1,328 @@
+{% extends "layout.html" %}
+
+{% block title %}My Profile - Student Management System{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item active">My Profile</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row">
+    <!-- Profile Information -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-id-card"></i> Profile Information</h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="display-2 text-primary mb-3">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <h3>{{ user.first_name }} {{ user.last_name }}</h3>
+                <p class="text-muted mb-3">
+                    <span class="badge bg-{{ 'primary' if user.role == 'admin' else 'success' if user.role == 'teacher' else 'info' }}">
+                        <i class="fas fa-{{ 'crown' if user.role == 'admin' else 'chalkboard-teacher' if user.role == 'teacher' else 'user-graduate' }}"></i>
+                        {{ user.role|title }}
+                    </span>
+                </p>
+                
+                <table class="table table-sm text-start">
+                    <tr>
+                        <th>Username:</th>
+                        <td>{{ user.username }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ user.email }}</td>
+                    </tr>
+                    <tr>
+                        <th>Member Since:</th>
+                        <td>{{ user.created_at[:10] if user.created_at else 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Last Login:</th>
+                        <td>{{ user.last_login[:10] if user.last_login else 'N/A' }}</td>
+                    </tr>
+                </table>
+                
+                <button type="button" class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                    <i class="fas fa-edit"></i> Edit Profile
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Role-specific details -->
+    <div class="col-md-8 mb-4">
+        {% if user.role == 'student' and profile_data %}
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-user-graduate"></i> Student Details</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th style="width: 200px;">Student ID:</th>
+                        <td>{{ profile_data.student_id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Department:</th>
+                        <td>{{ profile_data.dept_name or 'Not assigned' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Date of Birth:</th>
+                        <td>{{ profile_data.date_of_birth or 'Not provided' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Gender:</th>
+                        <td>{{ profile_data.gender or 'Not provided' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone:</th>
+                        <td>{{ profile_data.phone or 'Not provided' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Address:</th>
+                        <td>
+                            {% if profile_data.address %}
+                                {{ profile_data.address }}<br>
+                                {{ profile_data.city }}, {{ profile_data.state }} {{ profile_data.zip_code }}<br>
+                                {{ profile_data.country }}
+                            {% else %}
+                                Not provided
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Enrollment Date:</th>
+                        <td>{{ profile_data.enrollment_date }}</td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            <span class="badge bg-{{ 'success' if profile_data.status == 'active' else 'secondary' }}">
+                                {{ profile_data.status|title }}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        {% elif user.role == 'teacher' and profile_data %}
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-chalkboard-teacher"></i> Teacher Details</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th style="width: 200px;">Instructor ID:</th>
+                        <td>{{ profile_data.instructor_id }}</td>
+                    </tr>
+                    <tr>
+                        <th>Department:</th>
+                        <td>{{ profile_data.dept_name or 'Not assigned' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Qualification:</th>
+                        <td>{{ profile_data.qualification or 'Not provided' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Specialization:</th>
+                        <td>{{ profile_data.specialization or 'Not provided' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone:</th>
+                        <td>{{ profile_data.phone or 'Not provided' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Office Hours:</th>
+                        <td>{{ profile_data.office_hours or 'Not provided' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Joining Date:</th>
+                        <td>{{ profile_data.joining_date or 'Not provided' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            <span class="badge bg-{{ 'success' if profile_data.status == 'active' else 'secondary' }}">
+                                {{ profile_data.status|title }}
+                            </span>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        {% elif user.role == 'admin' %}
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-crown"></i> Administrator Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> You have full system access as an administrator.
+                </div>
+                <table class="table">
+                    <tr>
+                        <th style="width: 200px;">Username:</th>
+                        <td>{{ user.username }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ user.email }}</td>
+                    </tr>
+                    <tr>
+                        <th>Full Name:</th>
+                        <td>{{ user.first_name }} {{ user.last_name }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Account Information -->
+        <div class="card mt-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-shield-alt"></i> Account Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <tr>
+                        <th style="width: 200px;">Account Status:</th>
+                        <td>
+                            <span class="badge bg-success">Active</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Account Created:</th>
+                        <td>{{ user.created_at or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Last Updated:</th>
+                        <td>{{ user.updated_at or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Password:</th>
+                        <td>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="alert('Password change feature coming soon!')">
+                                <i class="fas fa-key"></i> Change Password
+                            </button>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('update_profile') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Basic Information -->
+                    <h6 class="mb-3">Basic Information</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}" required>
+                    </div>
+                    
+                    {% if user.role == 'student' and profile_data %}
+                    <hr>
+                    <h6 class="mb-3">Student Information</h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="text" class="form-control" id="phone" name="phone" value="{{ profile_data.phone or '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Address</label>
+                        <input type="text" class="form-control" id="address" name="address" value="{{ profile_data.address or '' }}">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="city" class="form-label">City</label>
+                            <input type="text" class="form-control" id="city" name="city" value="{{ profile_data.city or '' }}">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="state" class="form-label">State</label>
+                            <input type="text" class="form-control" id="state" name="state" value="{{ profile_data.state or '' }}">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="zip_code" class="form-label">ZIP Code</label>
+                            <input type="text" class="form-control" id="zip_code" name="zip_code" value="{{ profile_data.zip_code or '' }}">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="country" class="form-label">Country</label>
+                        <input type="text" class="form-control" id="country" name="country" value="{{ profile_data.country or 'USA' }}">
+                    </div>
+                    
+                    {% elif user.role == 'teacher' and profile_data %}
+                    <hr>
+                    <h6 class="mb-3">Teacher Information</h6>
+                    <div class="mb-3">
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="text" class="form-control" id="phone" name="phone" value="{{ profile_data.phone or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="office_hours" class="form-label">Office Hours</label>
+                        <input type="text" class="form-control" id="office_hours" name="office_hours" value="{{ profile_data.office_hours or '' }}" placeholder="e.g., Mon/Wed 2-4 PM">
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Show success message if profile was updated
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                {% if category == 'success' and 'profile' in message.lower() %}
+                    setTimeout(function() {
+                        showNotification('{{ message }}', 'success');
+                    }, 500);
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</script>
+{% endblock %}

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-{{ 'edit' if instructor else 'plus' }}"></i> {{ form_title }}</h2>
+            <hr>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Instructor Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('instructor_add' if not instructor else 'instructor_edit', id=instructor.id if instructor else 0) }}">
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">First Name *</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name"
+                                       value="{{ instructor.first_name if instructor else '' }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name"
+                                       value="{{ instructor.last_name if instructor else '' }}" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="email" name="email"
+                                       value="{{ instructor.email if instructor else '' }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Phone</label>
+                                <input type="text" class="form-control" id="phone" name="phone"
+                                       value="{{ instructor.phone if instructor else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="department_id" class="form-label">Department</label>
+                                <select class="form-select" id="department_id" name="department_id">
+                                    <option value="">Select Department</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}" {{ 'selected' if instructor and instructor.department_id == dept.id }}>
+                                        {{ dept.dept_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="qualification" class="form-label">Qualification</label>
+                                <input type="text" class="form-control" id="qualification" name="qualification"
+                                       value="{{ instructor.qualification if instructor else '' }}"
+                                       placeholder="e.g., PhD, M.Tech">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="specialization" class="form-label">Specialization</label>
+                                <input type="text" class="form-control" id="specialization" name="specialization"
+                                       value="{{ instructor.specialization if instructor else '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="joining_date" class="form-label">Joining Date</label>
+                                <input type="date" class="form-control" id="joining_date" name="joining_date"
+                                       value="{{ instructor.joining_date if instructor else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="salary" class="form-label">Salary</label>
+                                <input type="number" class="form-control" id="salary" name="salary"
+                                       value="{{ instructor.salary if instructor else '' }}" step="0.01" min="0">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="active" {{ 'selected' if not instructor or instructor.status == 'active' }}>Active</option>
+                                    <option value="inactive" {{ 'selected' if instructor and instructor.status == 'inactive' }}>Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="office_hours" class="form-label">Office Hours</label>
+                            <input type="text" class="form-control" id="office_hours" name="office_hours"
+                                   value="{{ instructor.office_hours if instructor else '' }}"
+                                   placeholder="e.g., Mon/Wed 2:00-4:00 PM">
+                        </div>
+
+                        <div class="d-flex gap-2 mt-3">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-save"></i> {{ 'Update Instructor' if instructor else 'Add Instructor' }}
+                            </button>
+                            <a href="{{ url_for('instructor_list') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Create Assignment{% endblock %}
+{% block page_title %}Create Assignment{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>📝 Create Assignment</h1>
+        <p>{{ course.course_code }} — {{ course.course_name }}</p>
+    </div>
+</div>
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header">Assignment Details</div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">Assignment Title *</label>
+                        <input type="text" class="form-control" name="title"
+                               placeholder="e.g. Unit 1 Assignment" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="4"
+                                  placeholder="Describe the assignment requirements..."></textarea>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Due Date *</label>
+                            <input type="date" class="form-control" name="due_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Maximum Marks</label>
+                            <input type="number" class="form-control" name="max_marks"
+                                   value="100" min="1" max="1000">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label">Attach File (Optional)</label>
+                        <input type="file" class="form-control" name="file"
+                               accept=".pdf,.doc,.docx,.txt,.png,.jpg,.pptx,.xlsx,.zip">
+                        <small class="text-muted">
+                            Allowed: PDF, DOC, DOCX, TXT, PNG, JPG, PPTX, XLSX, ZIP (Max 16MB)
+                        </small>
+                    </div>
+                    <div class="p-3 rounded mb-4"
+                         style="background:#eff4ff;border-left:4px solid #1a56db;">
+                        <small>
+                            <strong>📧 Auto-notification:</strong> Students will receive
+                            both in-app and email notifications when you create this assignment.
+                        </small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Create Assignment
+                        </button>
+                        <a href="{{ url_for('faculty_assignments', course_id=course.id) }}"
+                           class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

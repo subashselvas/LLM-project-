@@ -1,0 +1,814 @@
+{% extends "base.html" %}
+{% block title %}Live Class — {{ classroom.course_code }}{% endblock %}
+
+{% block content %}
+<style>
+/* ── Live Classroom: Student ───────────────────── */
+.classroom-wrap {
+    min-height: calc(100vh - var(--topbar-h));
+    padding: 20px 0;
+}
+.live-top-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 14px 24px; margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.status-live { color: #ef4444; font-weight: 700; animation: pulse-text-red 2s infinite; }
+@keyframes pulse-text-red { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
+
+.main-grid { display:grid; grid-template-columns:1fr 300px; gap:20px; }
+@media(max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+.video-area { display:flex; flex-direction:column; gap:16px; }
+
+/* Teacher main video */
+.teacher-video-box { 
+    background: #000; border-radius: 18px; aspect-ratio: 16/9;
+    position: relative; overflow: hidden;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+.teacher-video-box video { width:100%; height:100%; object-fit:cover; }
+.video-label { position:absolute; bottom:16px; left:16px; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); padding:6px 14px; border-radius:30px; font-size:0.8rem; font-weight:600; color:white; border:1px solid rgba(255,255,255,0.1); }
+.waiting-msg { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; color:var(--text-muted); }
+
+/* Student own camera (small) */
+.my-cam-box { background:#0a0a0a; border-radius:12px; height:130px; position:relative; overflow:hidden; border:2px solid transparent; }
+.my-cam-box video { width:100%; height:100%; object-fit:cover; }
+.my-cam-label { position:absolute; bottom:6px; left:6px; background:rgba(0,0,0,0.7); font-size:0.65rem; padding:3px 8px; border-radius:6px; color:white; font-weight:600; }
+
+/* Controls Dashboard */
+.controls-dashboard {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px;
+    display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
+}
+.ctrl-btn { border:none; border-radius:12px; padding:10px 18px; cursor:pointer; font-size:0.85rem; font-weight:600; display:flex; align-items:center; gap:8px; transition:all 0.15s; }
+.ctrl-btn:hover { filter:brightness(1.1); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+
+/* Side panel */
+.side-panel { display:flex; flex-direction:column; gap:16px; }
+.live-panel { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+.panel-head { padding:14px 18px; font-weight:700; font-size:0.875rem; border-bottom:1px solid var(--border); }
+.panel-body { padding:14px; }
+
+/* Question overlay */
+.q-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); backdrop-filter:blur(10px); z-index:9999; display:none; align-items:center; justify-content:center; }
+.q-box { background:var(--surface); border-radius:24px; padding:36px; max-width:480px; width:92%; border:1px solid rgba(6,182,212,0.3); box-shadow:0 24px 60px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05); }
+.q-box h5 { margin:0 0 6px; color:#06b6d4; font-weight:800; font-size:1.4rem; letter-spacing:-0.5px; }
+.timer-bar { height:6px; border-radius:3px; background:var(--surface-3); margin:16px 0 20px; overflow:hidden; }
+.timer-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#3b82f6,#06b6d4); transition:width 1s linear; }
+.q-text { font-size:1.1rem; font-weight:600; margin:0 0 20px; color:var(--text-primary); }
+.opt-btn { width:100%; background:var(--surface-2); color:var(--text-primary); border:1px solid var(--border); border-radius:12px; padding:14px 18px; margin-bottom:10px; cursor:pointer; font-size:0.95rem; text-align:left; font-weight:600; transition:all 0.15s; }
+.opt-btn:hover { background:var(--surface-3); border-color:#06b6d4; transform:translateX(4px); }
+.opt-btn.correct { background:rgba(34,197,94,0.1); border-color:#22c55e; color:#22c55e; }
+.opt-btn.wrong   { background:rgba(239,68,68,0.1); border-color:#ef4444; color:#ef4444; }
+
+/* Kicked overlay */
+.kicked-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,10,15,0.95); backdrop-filter:blur(12px); z-index:99999; display:none; align-items:center; justify-content:center; text-align:center; flex-direction:column; }
+.kicked-title { font-size:2rem; font-weight:800; color:white; margin-bottom:8px; }
+.kicked-sub { color:var(--text-secondary); margin-bottom:32px; font-size:1.1rem; }
+
+/* Attendance badge */
+.att-badge { background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.3); color:#22c55e; border-radius:12px; padding:6px 14px; font-size:0.8rem; font-weight:700; display:flex; align-items:center; gap:6px; }
+
+/* Stats */
+.stat-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid var(--border); font-size:0.85rem; }
+.stat-row:last-child { border-bottom:none; padding-bottom:0; }
+.stat-lbl { color:var(--text-secondary); }
+.stat-val { font-weight:600; color:var(--text-primary); }
+
+/* Notes card */
+.notes-text { background:var(--surface-2); border-radius:12px; padding:16px; font-size:0.85rem; color:var(--text-secondary); white-space:pre-wrap; border:1px solid var(--border); font-family:var(--font); line-height:1.6; }
+</style>
+
+<!-- Kicked Screen -->
+<div class="kicked-overlay" id="kickedOverlay">
+    <div style="font-size:5rem; margin-bottom:16px;">🚫</div>
+    <div class="kicked-title">Removed from Classroom</div>
+    <div class="kicked-sub">You missed too many proctoring questions.</div>
+    <a href="{{ url_for('student_dashboard') }}" class="ctrl-btn" style="background:linear-gradient(135deg,#dc2626,#ef4444);color:white;text-decoration:none;display:inline-flex;font-size:1rem;padding:12px 28px;">
+       <i class="fas fa-arrow-left"></i> Return to Dashboard
+    </a>
+</div>
+
+<!-- Question Overlay -->
+<div class="q-overlay" id="qOverlay">
+    <div class="q-box">
+        <h5><i class="fas fa-stopwatch me-2" style="color:#06b6d4;"></i>Quick Question!</h5>
+        <div style="color:var(--text-muted);font-size:0.85rem;">Answer within 60 seconds to verify presence</div>
+        <div class="timer-bar">
+            <div class="timer-fill" id="timerFill" style="width:100%;"></div>
+        </div>
+        <div class="q-text" id="qText">Loading...</div>
+        <div id="optsList"></div>
+        <div id="missedMsg" style="color:#ef4444;font-size:0.85rem;display:none;margin-top:12px;font-weight:600;background:rgba(239,68,68,0.1);padding:8px 12px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);">
+            <i class="fas fa-exclamation-circle me-1"></i> Time up! Question marked as missed.
+        </div>
+    </div>
+</div>
+
+<div class="classroom-wrap">
+
+    <!-- Top Bar -->
+    <div class="live-top-bar">
+        <div class="d-flex align-items-center gap-3">
+            <div style="background:var(--surface-2); border:1px solid var(--border); padding:8px 14px; border-radius:10px; display:inline-flex; align-items:center; font-weight:600; font-size:0.85rem;">
+                <span id="classStatus">⏳ Waiting for teacher...</span>
+            </div>
+            <div>
+                <div style="font-weight:700; font-size:1.1rem; color:var(--text-primary);">{{ classroom.session_title }}</div>
+                <div style="font-size:0.75rem; color:var(--text-muted);">{{ classroom.course_code }}</div>
+            </div>
+        </div>
+        <div id="attBadge" style="display:none;" class="att-badge">
+            <i class="fas fa-check-circle"></i> Attendance Marked
+        </div>
+    </div>
+
+    <div class="main-grid">
+
+        <!-- Left: Teacher Video + My Camera -->
+        <div class="video-area">
+
+            <!-- Teacher video (main) -->
+            <div class="teacher-video-box">
+                <video id="teacherVideo" autoplay playsinline></video>
+                
+                <div id="breakoutBadge" style="position:absolute;top:16px;right:16px;background:linear-gradient(135deg,#f59e0b,#d97706);color:white;padding:6px 14px;border-radius:20px;font-weight:700;font-size:0.85rem;display:none;z-index:100;box-shadow:0 4px 12px rgba(245,158,11,0.3);"></div>
+
+                <canvas id="whiteboardCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10;"></canvas>
+                <div class="video-label" id="teacherLabel"><i class="fas fa-video-slash me-2"></i>Waiting for teacher...</div>
+                <div class="waiting-msg" id="waitingMsg">
+                    <div style="font-size:3.5rem;margin-bottom:10px;opacity:0.5;"><i class="fas fa-broadcast-tower"></i></div>
+                    <div style="font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:4px;">Waiting for broadcast</div>
+                    <div style="font-size:0.8rem;">Please stay on this page</div>
+                </div>
+            </div>
+
+            <!-- My Camera + Controls -->
+            <div class="controls-dashboard">
+                <!-- My small camera -->
+                <div class="my-cam-box" style="width:180px;flex-shrink:0;">
+                    <video id="myVideo" autoplay muted playsinline></video>
+                    <div class="my-cam-label">👤 You</div>
+                    <div id="camPlaceholder" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--text-muted);">
+                        <div style="font-size:1.5rem;margin-bottom:4px;opacity:0.5;"><i class="fas fa-video-slash"></i></div>
+                        <div style="font-size:0.7rem;font-weight:600;">Camera Off</div>
+                    </div>
+                </div>
+
+                <div style="display:flex;flex-direction:column;gap:12px;flex:1;">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                        <button class="ctrl-btn" id="myCamBtn" style="background:rgba(34,197,94,0.1);color:#22c55e;border:1px solid rgba(34,197,94,0.2);" onclick="toggleMyCamera()">
+                            <i class="fas fa-video"></i> Camera
+                        </button>
+                        <button class="ctrl-btn" id="myMicBtn" style="background:rgba(168,85,247,0.1);color:#a855f7;border:1px solid rgba(168,85,247,0.2);" onclick="toggleMyMic()">
+                            <i class="fas fa-microphone"></i> Audio
+                        </button>
+                        <div style="width:1px;height:24px;background:var(--border);margin:0 4px;"></div>
+                        <button class="ctrl-btn" id="handBtn" style="background:rgba(6,182,212,0.1);color:#06b6d4;border:1px solid rgba(6,182,212,0.2);" onclick="raiseHand()">
+                            <i class="fas fa-hand-paper"></i> Hand
+                        </button>
+                        <button class="ctrl-btn" id="confusedBtn" style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2);" onclick="signalConfusion()">
+                            <i class="fas fa-tachometer-alt"></i> Too Fast
+                        </button>
+                    </div>
+                    <div style="font-size:0.75rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;background:var(--surface-2);padding:8px 12px;border-radius:8px;border:1px solid var(--border);width:max-content;">
+                        <i class="fas fa-eye" style="color:#06b6d4;"></i> Tracked focus mode is active. Avoid switching tabs.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes (shown after class) -->
+            <div class="live-panel" id="notesCard" style="display:none;border-color:#22c55e;">
+                <div class="panel-head" style="background:rgba(34,197,94,0.1);">
+                    <span style="color:#22c55e;"><i class="fas fa-edit me-2"></i>Class Notes from Teacher</span>
+                </div>
+                <div class="panel-body">
+                    <div class="notes-text" id="notesText"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right: Info Panel -->
+        <div class="side-panel">
+
+            <!-- Class Info -->
+            <div class="live-panel">
+                <div class="panel-head">
+                    <span style="color:#3b82f6;"><i class="fas fa-info-circle me-2"></i>Session Details</span>
+                </div>
+                <div class="panel-body">
+                    <div class="stat-row">
+                        <span class="stat-lbl">Course</span>
+                        <span class="stat-val">{{ classroom.course_name }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-lbl">Code</span>
+                        <span class="stat-val">{{ classroom.course_code }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-lbl">Topic</span>
+                        <span class="stat-val">{{ classroom.session_title }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- My Stats -->
+            <div class="live-panel">
+                <div class="panel-head">
+                    <span style="color:#a855f7;"><i class="fas fa-chart-pie me-2"></i>Proctoring Status</span>
+                </div>
+                <div class="panel-body">
+                    <div class="stat-row">
+                        <span class="stat-lbl">Questions Sent</span>
+                        <span class="stat-val" id="qReceived">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-lbl">Answered</span>
+                        <span class="stat-val" style="color:#22c55e;" id="qAnswered">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-lbl">Missed</span>
+                        <span class="stat-val" style="color:#ef4444;" id="qMissed">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-lbl">Standing</span>
+                        <span class="stat-val" id="myStatus" style="color:#22c55e;background:rgba(34,197,94,0.1);padding:2px 8px;border-radius:10px;">Good</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Warning -->
+            <div class="panel-card">
+                <div class="panel-header" style="background:#fd7e14;color:white;">
+                    ⚠️ Important Rules
+                </div>
+                <div class="panel-body" style="font-size:0.8rem;color:#ccc;">
+                    <p>• Questions appear at <strong>random times</strong></p>
+                    <p>• You have <strong>60 seconds</strong> to answer</p>
+                    <p>• Missing <strong>2 questions</strong> = warning</p>
+                    <p>• Missing <strong>3 questions</strong> = auto-removed</p>
+                    <p>• <strong>Stay on this page!</strong></p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Poll Overlay -->
+<div id="pollOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:9999;flex-direction:column;justify-content:center;align-items:center;">
+    <div style="background:#1a1a2e;padding:30px;border-radius:12px;text-align:center;max-width:500px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,0.6);">
+        <div style="font-size:2.5rem;margin-bottom:10px;">📊</div>
+        <h3 style="color:white;margin-bottom:20px;" id="pollQuestionText">Poll Question</h3>
+        <div id="pollOptionsContainer" style="display:flex;flex-direction:column;gap:12px;"></div>
+        <div id="pollWaitMsg" style="display:none;margin-top:15px;color:#aaa;font-size:0.85rem;">Waiting for teacher to end poll...</div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<script id="studentClassData" type="application/json">
+{
+  "session_id": {{ session_id }},
+  "student_id": {{ student_id or 0 }},
+  "student_name": "{{ session.get('first_name', '') }} {{ session.get('last_name', '') }}"
+}
+</script>
+<script>
+const _cData = JSON.parse(document.getElementById('studentClassData').textContent);
+const SESSION_ID = _cData.session_id;
+const STUDENT_ID = _cData.student_id;
+const STUDENT_NAME = _cData.student_name.trim();
+
+let socket = io();
+let myStream = null;
+let cameraOn = false;
+let micOn = true;
+let currentQuestion = null;
+let questionTimer = null;
+let timerInterval = null;
+let missedCount = 0;
+let answeredCount = 0;
+let receivedCount = 0;
+let peerConnection = null;
+
+const iceConfig = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+};
+
+// Join classroom
+socket.emit('join_classroom', {
+    session_id: SESSION_ID,
+    user_type: 'student',
+    student_id: STUDENT_ID,
+    student_name: STUDENT_NAME
+});
+
+// ── Socket Events ──────────────────────────────────────────────────
+
+socket.on('class_started', function() {
+    document.getElementById('classStatus').innerHTML = '<span class="status-live">🔴 LIVE</span>';
+    document.getElementById('attBadge').style.display = 'inline-block';
+});
+
+socket.on('class_ended', function(data) {
+    document.getElementById('classStatus').textContent = '⏹ Class Ended';
+    clearTimeout(questionTimer);
+    clearInterval(timerInterval);
+    document.getElementById('qOverlay').style.display = 'none';
+    if (data.notes) {
+        document.getElementById('notesCard').style.display = 'block';
+        document.getElementById('notesText').textContent = data.notes;
+    }
+});
+
+socket.on('receive_question', function(data) {
+    showQuestion(data.question);
+});
+
+socket.on('kick_student', function(data) {
+    if (String(data.student_id) === String(STUDENT_ID)) {
+        document.getElementById('kickedOverlay').style.display = 'flex';
+    }
+});
+
+// WebRTC: receive teacher offer
+socket.on('offer', async function(data) {
+    if (data.to !== String(STUDENT_ID) && data.to !== STUDENT_ID) return;
+    peerConnection = new RTCPeerConnection(iceConfig);
+
+    peerConnection.onicecandidate = (e) => {
+        if (e.candidate) {
+            socket.emit('ice_candidate', {
+                session_id: SESSION_ID,
+                to: 'teacher',
+                from: STUDENT_ID,
+                candidate: e.candidate
+            });
+        }
+    };
+
+    peerConnection.ontrack = (e) => {
+        const video = document.getElementById('teacherVideo');
+        video.srcObject = e.streams[0];
+        document.getElementById('waitingMsg').style.display = 'none';
+        document.getElementById('teacherLabel').textContent = '👨‍🏫 Teacher';
+    };
+
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+
+    // Add our stream if camera is on
+    if (myStream) {
+        myStream.getTracks().forEach(t => peerConnection.addTrack(t, myStream));
+    }
+
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    socket.emit('answer', {
+        session_id: SESSION_ID,
+        to: 'teacher',
+        from: STUDENT_ID,
+        sdp: answer
+    });
+});
+
+socket.on('ice_candidate', async function(data) {
+    if (peerConnection && (data.to === String(STUDENT_ID) || data.to === STUDENT_ID)) {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+    }
+});
+
+// ── Camera Controls ────────────────────────────────────────────────
+
+async function toggleMyCamera() {
+    if (!cameraOn) {
+        try {
+            myStream = await navigator.mediaDevices.getUserMedia({
+                video: true, audio: true
+            });
+            document.getElementById('myVideo').srcObject = myStream;
+            document.getElementById('camPlaceholder').style.display = 'none';
+            document.getElementById('myCamBtn').textContent = '📷 Stop Camera';
+            document.getElementById('myCamBtn').style.background = '#dc3545';
+            cameraOn = true;
+
+            // Send camera stream to teacher
+            socket.emit('student_video_stream', {
+                session_id: SESSION_ID,
+                student_id: STUDENT_ID,
+                student_name: STUDENT_NAME
+            });
+
+            // Send offer to teacher with our stream
+            await sendOfferToTeacher();
+
+        } catch(e) {
+            alert('Camera access denied: ' + e.message);
+        }
+    } else {
+        if (myStream) myStream.getTracks().forEach(t => t.stop());
+        document.getElementById('myVideo').srcObject = null;
+        document.getElementById('camPlaceholder').style.display = 'block';
+        document.getElementById('myCamBtn').textContent = '📷 Start Camera';
+        document.getElementById('myCamBtn').style.background = '#198754';
+        cameraOn = false;
+    }
+}
+
+// Track when student leaves the page
+window.addEventListener('beforeunload', function() {
+    socket.emit('student_left', {
+        session_id: SESSION_ID,
+        student_id: STUDENT_ID,
+        student_name: STUDENT_NAME
+    });
+});
+
+// Track page visibility (detect tab switching)
+let hiddenCount = 0;
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        hiddenCount++;
+        // If student hides tab more than 3 times, alert teacher
+        if (hiddenCount >= 3) {
+            socket.emit('alert_teacher', {
+                session_id: SESSION_ID,
+                student_id: STUDENT_ID,
+                student_name: STUDENT_NAME,
+                missed_count: hiddenCount,
+                message: STUDENT_NAME + ' switched tabs ' + hiddenCount + ' times!'
+            });
+        }
+    }
+});
+
+async function sendOfferToTeacher() {
+    const pc = new RTCPeerConnection(iceConfig);
+
+    pc.onicecandidate = (e) => {
+        if (e.candidate) {
+            socket.emit('ice_candidate', {
+                session_id: SESSION_ID,
+                to: 'teacher',
+                from: STUDENT_ID,
+                candidate: e.candidate
+            });
+        }
+    };
+
+    if (myStream) {
+        myStream.getTracks().forEach(t => pc.addTrack(t, myStream));
+    }
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    socket.emit('offer', {
+        session_id: SESSION_ID,
+        to: 'teacher',
+        from: STUDENT_ID,
+        sdp: offer
+    });
+}
+
+function toggleMyMic() {
+    if (myStream) {
+        myStream.getAudioTracks().forEach(t => { t.enabled = !t.enabled; });
+    }
+    micOn = !micOn;
+    document.getElementById('myMicBtn').textContent = micOn ? '🎤 Mute' : '🔇 Unmute';
+    document.getElementById('myMicBtn').style.background = micOn ? '#6f42c1' : '#343a40';
+}
+
+// ── Question Handling ──────────────────────────────────────────────
+
+function showQuestion(question) {
+    currentQuestion = question;
+    receivedCount++;
+    document.getElementById('qReceived').textContent = receivedCount;
+
+    document.getElementById('qText').textContent = question.q;
+    document.getElementById('missedMsg').style.display = 'none';
+
+    let optsHtml = '';
+    question.options.forEach((opt, i) => {
+        optsHtml += `<button class="opt-btn" id="opt_${i}" onclick="submitAnswer(${i})">${opt}</button>`;
+    });
+    document.getElementById('optsList').innerHTML = optsHtml;
+
+    document.getElementById('qOverlay').style.display = 'flex';
+    document.getElementById('timerFill').style.width = '100%';
+    document.getElementById('timerFill').style.background = '#0dcaf0';
+
+    let timeLeft = 60;
+    const questionStart = Date.now();
+
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        const pct = (timeLeft / 60) * 100;
+        document.getElementById('timerFill').style.width = pct + '%';
+        if (timeLeft <= 15) document.getElementById('timerFill').style.background = '#dc3545';
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            missQuestion(questionStart);
+        }
+    }, 1000);
+
+    questionTimer = setTimeout(() => {
+        clearInterval(timerInterval);
+    }, 61000);
+}
+
+function submitAnswer(idx) {
+    if (!currentQuestion) return;
+    clearTimeout(questionTimer);
+    clearInterval(timerInterval);
+
+    const timeTaken = Math.round((Date.now() - (Date.now())) / 1000) || 5;
+    answeredCount++;
+    document.getElementById('qAnswered').textContent = answeredCount;
+
+    // Show result
+    document.querySelectorAll('.opt-btn').forEach((btn, i) => {
+        btn.disabled = true;
+        if (i === currentQuestion.answer) btn.classList.add('correct');
+        if (i === idx && idx !== currentQuestion.answer) btn.classList.add('wrong');
+    });
+
+    socket.emit('submit_answer', {
+        session_id: SESSION_ID,
+        student_id: STUDENT_ID,
+        student_name: STUDENT_NAME,
+        question_id: currentQuestion.id,
+        question_text: currentQuestion.q,
+        answer_given: idx,
+        correct_answer: currentQuestion.answer,
+        time_taken: timeTaken
+    });
+
+    setTimeout(() => {
+        document.getElementById('qOverlay').style.display = 'none';
+        currentQuestion = null;
+    }, 1800);
+}
+
+function missQuestion(startTime) {
+    if (!currentQuestion) return;
+    missedCount++;
+    document.getElementById('qMissed').textContent = missedCount;
+
+    if (missedCount >= 2) {
+        document.getElementById('myStatus').textContent = '⚠️ Warning';
+        document.getElementById('myStatus').style.color = '#fd7e14';
+    }
+
+    document.querySelectorAll('.opt-btn').forEach(b => b.disabled = true);
+    document.getElementById('missedMsg').style.display = 'block';
+
+    socket.emit('missed_question', {
+        session_id: SESSION_ID,
+        student_id: STUDENT_ID,
+        student_name: STUDENT_NAME,
+        question_id: currentQuestion ? currentQuestion.id : 0,
+        missed_count: missedCount
+    });
+
+    setTimeout(() => {
+        document.getElementById('qOverlay').style.display = 'none';
+        currentQuestion = null;
+    }, 2000);
+}
+
+// ── Hand Raising ───────────────────────────────────────────────────
+
+function raiseHand() {
+    socket.emit('raise_hand', {
+        session_id: SESSION_ID,
+        student_id: STUDENT_ID,
+        student_name: STUDENT_NAME
+    });
+    const btn = document.getElementById('handBtn');
+    btn.innerHTML = '✋ Hand Raised';
+    btn.style.background = '#0a58ca';
+    btn.style.color = 'white';
+    setTimeout(() => {
+        btn.innerHTML = '✋ Raise Hand';
+        btn.style.background = '#0dcaf0';
+        btn.style.color = '#111';
+    }, 5000);
+}
+
+// ── Confusion Signal & Focus Tracking ──────────────────────────────
+
+function signalConfusion() {
+    socket.emit('confusion_signal', {
+        session_id: SESSION_ID,
+        student_id: STUDENT_ID
+    });
+    const btn = document.getElementById('confusedBtn');
+    btn.innerHTML = '🐢 Signaled!';
+    btn.disabled = true;
+    setTimeout(() => {
+        btn.innerHTML = '🐢 Too Fast';
+        btn.disabled = false;
+    }, 10000); // 10 second cooldown
+}
+
+document.addEventListener('visibilitychange', () => {
+    socket.emit('student_distracted', {
+        session_id: SESSION_ID,
+        student_id: STUDENT_ID,
+        student_name: STUDENT_NAME,
+        is_distracted: document.hidden
+    });
+});
+
+// ── Whiteboard Logic ───────────────────────────────────────────────
+
+const canvas = document.getElementById('whiteboardCanvas');
+const ctx = canvas.getContext('2d');
+let activeBreakoutRoom = null;
+
+function resizeCanvas() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+setTimeout(resizeCanvas, 1000);
+
+socket.on('draw_line', function(data) {
+    if (data.breakout_id !== activeBreakoutRoom) return; // Private room isolation
+    if(canvas.width === 0) resizeCanvas();
+    ctx.strokeStyle = data.color || '#fff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(data.x0 * canvas.width, data.y0 * canvas.height);
+    ctx.lineTo(data.x1 * canvas.width, data.y1 * canvas.height);
+    ctx.stroke();
+});
+
+socket.on('clear_whiteboard', function() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+});
+
+socket.on('whiteboard_toggle', function(data) {
+    if(data.show) {
+        document.getElementById('teacherVideo').style.opacity = '0.2';
+    } else {
+        document.getElementById('teacherVideo').style.opacity = '1';
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+});
+
+let hasPen = false;
+let drawing = false;
+let lastX = 0, lastY = 0;
+
+socket.on('grant_whiteboard_access', function(data) {
+    if (String(data.student_id) === String(STUDENT_ID)) {
+        hasPen = true;
+        canvas.style.pointerEvents = 'auto';
+        canvas.style.cursor = 'crosshair';
+        alert('🖌️ The Teacher has given you the marker! You can now draw on the screen.');
+    }
+});
+
+socket.on('revoke_whiteboard_access', function(data) {
+    if (String(data.student_id) === String(STUDENT_ID)) {
+        hasPen = false;
+        drawing = false;
+        canvas.style.pointerEvents = 'none';
+        canvas.style.cursor = 'default';
+        alert('❌ The Teacher has removed your marker access.');
+    }
+});
+
+socket.on('assign_breakout', function(data) {
+    if (String(data.student_id) === String(STUDENT_ID)) {
+        activeBreakoutRoom = data.breakout_id;
+        hasPen = true;
+        canvas.style.pointerEvents = 'auto';
+        canvas.style.cursor = 'crosshair';
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear global draws
+        
+        const badge = document.getElementById('breakoutBadge');
+        if(badge) {
+            badge.style.display = 'block';
+            badge.innerHTML = `🤝 In Breakout: ${data.room_name}`;
+        }
+        
+        alert(`🤝 You have been assigned to Breakout ${data.room_name}! You and your partner share a private, collaborative whiteboard.`);
+    }
+});
+
+socket.on('end_breakout', function() {
+    activeBreakoutRoom = null;
+    hasPen = false;
+    canvas.style.pointerEvents = 'none';
+    canvas.style.cursor = 'default';
+    ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear breakout draws
+    const badge = document.getElementById('breakoutBadge');
+    if(badge) badge.style.display = 'none';
+});
+
+canvas.addEventListener('mousedown', e => {
+    if(!hasPen) return;
+    drawing = true;
+    const rect = canvas.getBoundingClientRect();
+    lastX = e.clientX - rect.left;
+    lastY = e.clientY - rect.top;
+});
+canvas.addEventListener('mouseup', () => drawing = false);
+canvas.addEventListener('mouseout', () => drawing = false);
+canvas.addEventListener('mousemove', e => {
+    if(!drawing || !hasPen) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    ctx.strokeStyle = '#ffc107'; // yellow for student
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+
+    socket.emit('draw_line', {
+        session_id: SESSION_ID,
+        breakout_id: activeBreakoutRoom,
+        x0: lastX / canvas.width,
+        y0: lastY / canvas.height,
+        x1: x / canvas.width,
+        y1: y / canvas.height,
+        color: '#ffc107'
+    });
+
+    lastX = x;
+    lastY = y;
+});
+
+// ── Polling ────────────────────────────────────────────────────────
+
+let currentPollId = null;
+
+socket.on('start_poll', function(data) {
+    currentPollId = data.poll_id;
+    document.getElementById('pollQuestionText').textContent = data.question;
+    const container = document.getElementById('pollOptionsContainer');
+    container.innerHTML = '';
+    
+    data.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-outline-info w-100 poll-opt-btn';
+        btn.textContent = opt;
+        btn.onclick = () => submitPollResponse(idx);
+        container.appendChild(btn);
+    });
+    
+    document.getElementById('pollWaitMsg').style.display = 'none';
+    document.getElementById('pollOverlay').style.display = 'flex';
+});
+
+socket.on('end_poll', function(data) {
+    if (currentPollId === data.poll_id) {
+        document.getElementById('pollOverlay').style.display = 'none';
+        currentPollId = null;
+    }
+});
+
+function submitPollResponse(idx) {
+    if (!currentPollId) return;
+    
+    socket.emit('poll_response', {
+        session_id: SESSION_ID,
+        poll_id: currentPollId,
+        student_id: STUDENT_ID,
+        option_index: idx
+    });
+    
+    // Disable buttons
+    document.querySelectorAll('.poll-opt-btn').forEach(b => {
+        b.disabled = true;
+        b.classList.remove('btn-outline-info');
+        b.classList.add('btn-secondary');
+        b.style.opacity = '0.6';
+    });
+    
+    // Highlight selected
+    const btns = document.querySelectorAll('.poll-opt-btn');
+    if(btns[idx]) {
+        btns[idx].classList.remove('btn-secondary');
+        btns[idx].classList.add('btn-info');
+        btns[idx].style.color = '#111';
+        btns[idx].style.opacity = '1';
+    }
+    
+    document.getElementById('pollWaitMsg').style.display = 'block';
+}
+</script>
+{% endblock %}

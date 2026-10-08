@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+{% block title %}Faculty Dashboard — EduCore{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Premium Teacher Dashboard ───────────────────────── */
+.hero-banner {
+    background: linear-gradient(135deg, #0c4a6e 0%, #0891b2 50%, #06b6d4 100%);
+    border-radius: 20px;
+    padding: 28px 32px;
+    color: white;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(8,145,178,0.3);
+}
+.hero-banner::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 50%;
+}
+.hero-banner::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: 25%;
+    width: 260px; height: 260px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 50%;
+}
+.hero-inner      { position: relative; z-index: 1; }
+.hero-avatar     { width:52px;height:52px;background:rgba(255,255,255,0.15);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;border:1px solid rgba(255,255,255,0.2);flex-shrink:0; }
+.hero-name       { font-size:1.35rem;font-weight:700;margin:0;letter-spacing:-0.3px; }
+.hero-sub        { font-size:0.82rem;opacity:0.75;margin:2px 0 0; }
+.hero-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.18s;
+}
+.hero-action-primary {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+    backdrop-filter: blur(8px);
+}
+.hero-action-primary:hover { background: rgba(255,255,255,0.3); color: white; }
+.hero-action-ghost {
+    background: transparent;
+    color: white;
+    border: 1px solid rgba(255,255,255,0.25);
+}
+.hero-action-ghost:hover { background: rgba(255,255,255,0.1); color: white; }
+
+/* Stat cards */
+.stat-card-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px; }
+@media(max-width:768px){ .stat-card-grid{ grid-template-columns:repeat(2,1fr); } }
+.stat-prem {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-prem:hover { transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,0.3); }
+.stat-prem-icon { width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin-bottom:14px; }
+.stat-prem.cyan  .stat-prem-icon { background:rgba(6,182,212,0.12); }
+.stat-prem.blue  .stat-prem-icon { background:rgba(59,130,246,0.12); }
+.stat-prem.amber .stat-prem-icon { background:rgba(245,158,11,0.12); }
+.stat-prem.red   .stat-prem-icon { background:rgba(239,68,68,0.12); }
+.stat-prem-val   { font-size:1.8rem;font-weight:800;color:var(--text-primary);line-height:1; }
+.stat-prem-lbl   { font-size:0.73rem;color:var(--text-muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.6px; }
+
+/* Course rows */
+.course-row {
+    display: flex;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    gap: 14px;
+    transition: background 0.15s;
+}
+.course-row:last-child { border-bottom: none; }
+.course-row:hover { background: var(--surface-2); }
+.course-code-pill { font-size:0.7rem;font-weight:700;padding:3px 8px;border-radius:6px;background:rgba(6,182,212,0.12);color:#06b6d4;white-space:nowrap;flex-shrink:0; }
+.status-pill-active   { display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.7rem;font-weight:700;background:rgba(34,197,94,0.12);color:#4ade80; }
+.status-pill-inactive { display:inline-block;padding:2px 8px;border-radius:20px;font-size:0.7rem;font-weight:700;background:rgba(100,116,139,0.12);color:#94a3b8; }
+
+/* Icon action buttons */
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.icon-btn.blue   { background:rgba(59,130,246,0.12);color:#60a5fa; }
+.icon-btn.green  { background:rgba(34,197,94,0.12) ;color:#4ade80; }
+.icon-btn.amber  { background:rgba(245,158,11,0.12);color:#fbbf24; }
+.icon-btn.gray   { background:rgba(100,116,139,0.12);color:#94a3b8; }
+.icon-btn:hover  { filter:brightness(1.3); }
+
+/* Action Grid */
+.action-grid { display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+.action-btn {
+    display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;
+    text-decoration:none;font-size:0.82rem;font-weight:600;
+    color:var(--text-primary);background:var(--surface-2);border:1px solid var(--border);
+    transition:all 0.18s;
+}
+.action-btn:hover { background:var(--surface-3);color:var(--text-primary);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,0.2); }
+.action-btn.danger { background:linear-gradient(135deg,#dc2626,#b91c1c);color:white;border-color:transparent;grid-column:span 2; }
+.action-btn.danger:hover { filter:brightness(1.1);color:white; }
+.action-btn-icon { width:28px;height:28px;border-radius:7px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0; }
+.action-btn.danger .action-btn-icon { background:rgba(255,255,255,0.15); }
+
+/* Risk table */
+.risk-pill { display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:0.68rem;font-weight:700; }
+.att-status-val { font-weight:700; }
+
+/* Schedule items */
+.schedule-item {
+    padding:14px 16px;
+    border-bottom:1px solid var(--border);
+}
+.schedule-item:last-child { border-bottom:none; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── HERO ──────────────────────────────── -->
+<div class="hero-banner mb-4">
+    <div class="hero-inner d-flex align-items-center justify-content-between gap-3 flex-wrap">
+        <div class="d-flex align-items-center gap-3">
+            <div class="hero-avatar">👨‍🏫</div>
+            <div>
+                <p class="hero-name">Welcome back, {{ instructor.first_name }}!</p>
+                <p class="hero-sub">{{ instructor.instructor_id }} &nbsp;·&nbsp; {{ instructor.dept_name or 'Department not assigned' }}</p>
+            </div>
+        </div>
+        <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('classroom_create') }}" class="hero-action-btn hero-action-primary">
+                <i class="fas fa-video"></i> Start Live Class
+            </a>
+            <a href="{{ url_for('faculty_courses') }}" class="hero-action-btn hero-action-ghost">
+                <i class="fas fa-book"></i> My Courses
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- ── STAT CARDS ─────────────────────────────── -->
+<div class="stat-card-grid">
+    <div class="stat-prem cyan">
+        <div class="stat-prem-icon">📚</div>
+        <div class="stat-prem-val">{{ courses|length }}</div>
+        <div class="stat-prem-lbl">Active Courses</div>
+    </div>
+    <div class="stat-prem blue">
+        <div class="stat-prem-icon">👥</div>
+        <div class="stat-prem-val">{{ courses|sum(attribute='enrolled_count') }}</div>
+        <div class="stat-prem-lbl">Total Students</div>
+    </div>
+    <div class="stat-prem amber">
+        <div class="stat-prem-icon">📅</div>
+        <div class="stat-prem-val">{{ today_schedule|length }}</div>
+        <div class="stat-prem-lbl">Today's Classes</div>
+    </div>
+    <div class="stat-prem red">
+        <div class="stat-prem-icon">🚨</div>
+        <div class="stat-prem-val">{{ at_risk_students|length }}</div>
+        <div class="stat-prem-lbl">At-Risk Students</div>
+    </div>
+</div>
+
+<!-- ── MAIN GRID ──────────────────────────── -->
+<div class="row g-4">
+
+    <!-- LEFT (8) -->
+    <div class="col-lg-8">
+
+        <!-- My Courses -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-layer-group" style="color:#06b6d4;"></i>
+                    <span style="font-weight:700;font-size:0.9rem;">My Courses</span>
+                </div>
+                <a href="{{ url_for('faculty_courses') }}" style="font-size:0.75rem;padding:5px 14px;background:var(--surface-2);border:1px solid var(--border);color:var(--text-secondary);border-radius:8px;text-decoration:none;">Manage All →</a>
+            </div>
+            <div style="padding:4px 0;">
+                {% if courses %}
+                    {% for course in courses %}
+                    <div class="course-row">
+                        <div style="flex:1;min-width:0;">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="course-code-pill">{{ course.course_code }}</span>
+                                <span style="font-weight:600;font-size:0.875rem;">{{ course.course_name }}</span>
+                            </div>
+                            <div style="font-size:0.73rem;color:var(--text-muted);">
+                                {{ course.dept_name or 'No dept' }} &nbsp;·&nbsp;
+                                <i class="fas fa-users me-1"></i>{{ course.enrolled_count }}/{{ course.max_students }} students
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                            <span class="{{ 'status-pill-active' if course.status == 'active' else 'status-pill-inactive' }}">
+                                {{ course.status|title }}
+                            </span>
+                            <a href="{{ url_for('faculty_course_students', course_id=course.id) }}" class="icon-btn blue" title="View Students"><i class="fas fa-users"></i></a>
+                            <a href="{{ url_for('faculty_mark_attendance') }}?course_id={{ course.id }}" class="icon-btn green" title="Mark Attendance"><i class="fas fa-calendar-check"></i></a>
+                            <a href="{{ url_for('faculty_assignments', course_id=course.id) }}" class="icon-btn gray" title="Assignments"><i class="fas fa-file-alt"></i></a>
+                            {% set quiz_onclick = 'onclick="generateQuiz(' ~ course.id ~ ', this)"' %}
+                            <button {{ quiz_onclick | safe }} class="icon-btn amber" title="AI Generate Quiz"><i class="fas fa-magic"></i></button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div style="padding:32px;text-align:center;color:var(--text-muted);">
+                    <div style="font-size:2rem;margin-bottom:8px;">📚</div>
+                    <div style="font-size:0.875rem;">No courses assigned yet.</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- At-Risk Students -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i>
+                    <span style="font-weight:700;font-size:0.9rem;">At-Risk Students <span style="font-size:0.75rem;font-weight:400;color:var(--text-muted);">(AI Report)</span></span>
+                </div>
+                <span style="background:rgba(239,68,68,0.12);color:#f87171;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;">
+                    {{ at_risk_students|length }} flagged
+                </span>
+            </div>
+            <div style="overflow:hidden;border-radius:0 0 var(--radius-lg) var(--radius-lg);">
+                {% if at_risk_students %}
+                <table class="table mb-0">
+                    <thead>
+                        <tr>
+                            <th style="font-size:0.7rem;letter-spacing:0.7px;text-transform:uppercase;color:var(--text-muted);background:var(--surface-2);">Student</th>
+                            <th style="font-size:0.7rem;letter-spacing:0.7px;text-transform:uppercase;color:var(--text-muted);background:var(--surface-2);">Course</th>
+                            <th style="font-size:0.7rem;letter-spacing:0.7px;text-transform:uppercase;color:var(--text-muted);background:var(--surface-2);">Attendance</th>
+                            <th style="font-size:0.7rem;letter-spacing:0.7px;text-transform:uppercase;color:var(--text-muted);background:var(--surface-2);">Days Needed</th>
+                            <th style="font-size:0.7rem;letter-spacing:0.7px;text-transform:uppercase;color:var(--text-muted);background:var(--surface-2);">Risk Level</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in at_risk_students %}
+                        <tr>
+                            <td>
+                                <div style="font-weight:600;font-size:0.85rem;">{{ r.name }}</div>
+                                <div style="font-size:0.72rem;color:var(--text-muted);">{{ r.student_id }}</div>
+                            </td>
+                            <td><span class="course-code-pill">{{ r.course_code }}</span></td>
+                            <td>
+                                {% set pct_style = 'class="att-status-val" style="color:' ~ r.badge_color ~ ';"' %}
+                                <span {{ pct_style | safe }}>{{ r.attendance_pct }}%</span>
+                            </td>
+                            <td style="font-size:0.82rem;color:var(--text-muted);">{{ r.days_needed }} classes</td>
+                            <td>
+                                {% set r_col = r.badge_color %}
+                                {% set risk_style = 'style="background:' ~ r_col ~ '20;color:' ~ r_col ~ ';"' %}
+                                <span class="risk-pill" {{ risk_style | safe }}>{{ r.risk_badge }}</span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div style="padding:32px;text-align:center;color:var(--text-muted);">
+                    <div style="font-size:2rem;margin-bottom:8px;">✅</div>
+                    <div style="font-size:0.875rem;">No at-risk students detected.</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RIGHT (4) -->
+    <div class="col-lg-4">
+
+        <!-- Today's Schedule -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-calendar-day" style="color:#06b6d4;"></i>
+                    <span style="font-weight:700;font-size:0.88rem;">Today's Schedule</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if today_schedule %}
+                    {% for cls in today_schedule %}
+                    <div class="schedule-item">
+                        <div style="font-weight:700;font-size:0.875rem;margin-bottom:3px;">
+                            {{ cls.course_code }} — {{ cls.course_name }}
+                        </div>
+                        <div style="font-size:0.73rem;color:var(--text-muted);margin-bottom:8px;">
+                            <i class="fas fa-clock me-1"></i>{{ cls.schedule or 'TBA' }}
+                            &nbsp;·&nbsp;
+                            <i class="fas fa-map-marker-alt me-1"></i>{{ cls.classroom or 'TBA' }}
+                        </div>
+                        {% if cls.attendance_marked > 0 %}
+                        <span style="background:rgba(34,197,94,0.12);color:#4ade80;padding:2px 9px;border-radius:20px;font-size:0.7rem;font-weight:700;">✓ Attendance Marked</span>
+                        {% else %}
+                        <span style="background:rgba(245,158,11,0.12);color:#fbbf24;padding:2px 9px;border-radius:20px;font-size:0.7rem;font-weight:700;">⏳ Pending</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <div style="padding:28px;text-align:center;color:var(--text-muted);">
+                    <div style="font-size:1.8rem;opacity:0.4;margin-bottom:8px;">📅</div>
+                    <div style="font-size:0.82rem;">No classes scheduled today.</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="fas fa-bolt" style="color:#06b6d4;"></i>
+                    <span style="font-weight:700;font-size:0.88rem;">Quick Actions</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="action-grid">
+                    <a href="{{ url_for('classroom_create') }}" class="action-btn danger">
+                        <div class="action-btn-icon"><i class="fas fa-video"></i></div>
+                        <span>Start Live Class</span>
+                    </a>
+                    <a href="{{ url_for('classroom_sessions') }}" class="action-btn">
+                        <div class="action-btn-icon">📋</div>
+                        <span>Past Sessions</span>
+                    </a>
+                    <a href="{{ url_for('faculty_courses') }}" class="action-btn">
+                        <div class="action-btn-icon"><i class="fas fa-book"></i></div>
+                        <span>My Courses</span>
+                    </a>
+                    <a href="{{ url_for('faculty_mark_attendance') }}" class="action-btn">
+                        <div class="action-btn-icon"><i class="fas fa-calendar-check"></i></div>
+                        <span>Attendance</span>
+                    </a>
+                    <a href="{{ url_for('faculty_assignments', course_id=courses[0].id if courses else 0) }}" class="action-btn">
+                        <div class="action-btn-icon">📝</div>
+                        <span>Assignments</span>
+                    </a>
+                    <a href="{{ url_for('profile') }}" class="action-btn">
+                        <div class="action-btn-icon">👤</div>
+                        <span>My Profile</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sessions Link -->
+        <div class="card" style="border-color:rgba(6,182,212,0.2);">
+            <div class="card-body" style="padding:18px;text-align:center;">
+                <div style="font-size:1.8rem;margin-bottom:8px;opacity:0.6;">📡</div>
+                <div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:12px;">Manage all your classroom sessions, recordings and transcripts.</div>
+                <a href="{{ url_for('classroom_sessions') }}" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;border-radius:10px;background:rgba(6,182,212,0.1);border:1px solid rgba(6,182,212,0.2);color:#22d3ee;font-size:0.82rem;font-weight:600;text-decoration:none;">
+                    <i class="fas fa-broadcast-tower"></i> View All Sessions
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+async function generateQuiz(courseId, btn) {
+    if(!confirm('Use AI to generate a quiz from the course syllabus. Continue?')) return;
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled = true;
+    try {
+        const res  = await fetch(`/api/teacher/generate_quiz/${courseId}`, {method:'POST'});
+        const data = await res.json();
+        alert(data.success ? data.message : 'Error: ' + data.error);
+    } catch(e) {
+        alert('Request failed.');
+    } finally {
+        btn.innerHTML = orig;
+        btn.disabled = false;
+    }
+}
+</script>
+
+{% endblock %}

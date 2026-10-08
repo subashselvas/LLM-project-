@@ -1,0 +1,1075 @@
+{% extends "base.html" %}
+{% block title %}Live Class — {{ classroom.course_code }}{% endblock %}
+
+{% block content %}
+<style>
+/* ── Live Classroom: Teacher ───────────────────── */
+.classroom-wrap {
+    min-height: calc(100vh - var(--topbar-h));
+    padding: 20px 0;
+}
+.live-top-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 14px 24px; margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.status-dot { width:10px; height:10px; border-radius:50%; background:#94a3b8; display:inline-block; margin-right:8px; }
+.status-dot.live { background:#ef4444; animation:pulse-red 1.5s infinite; }
+@keyframes pulse-red { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(239,68,68,0.7);} 50%{opacity:0.8;box-shadow:0 0 0 6px rgba(239,68,68,0);} }
+
+.main-grid { display:grid; grid-template-columns:1fr 340px; gap:20px; }
+@media(max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+/* Main Video */
+.video-area { display:flex; flex-direction:column; gap:16px; }
+.main-video-box { 
+    background: #000; border-radius: 18px; aspect-ratio: 16/9;
+    position: relative; overflow: hidden;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+}
+.main-video-box video { width:100%; height:100%; object-fit:cover; }
+.video-label { position:absolute; bottom:16px; left:16px; background:rgba(0,0,0,0.6); backdrop-filter:blur(8px); padding:6px 14px; border-radius:30px; font-size:0.8rem; font-weight:600; color:white; border:1px solid rgba(255,255,255,0.1); }
+.pip-video { position:absolute; bottom:16px; right:16px; width:180px; height:auto; aspect-ratio:16/9; border-radius:12px; overflow:hidden; border:2px solid rgba(255,255,255,0.8); background:#111; box-shadow:0 8px 24px rgba(0,0,0,0.5); }
+.pip-video video { width:100%; height:100%; object-fit:cover; }
+
+/* Controls Dashboard */
+.controls-dashboard {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 16px;
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center;
+}
+.ctrl-btn { border:none; border-radius:12px; padding:12px 20px; cursor:pointer; font-size:0.85rem; font-weight:600; display:flex; align-items:center; gap:8px; transition:all 0.15s; }
+.ctrl-btn:hover { filter:brightness(1.1); box-shadow:0 4px 8px rgba(0,0,0,0.1); }
+.btn-cam   { background:rgba(34,197,94,0.1); color:#22c55e; border:1px solid rgba(34,197,94,0.2); }
+.btn-screen{ background:rgba(59,130,246,0.1); color:#3b82f6; border:1px solid rgba(59,130,246,0.2); }
+.btn-mic   { background:rgba(168,85,247,0.1); color:#a855f7; border:1px solid rgba(168,85,247,0.2); }
+.btn-wb    { background:rgba(6,182,212,0.1); color:#06b6d4; border:1px solid rgba(6,182,212,0.2); }
+.btn-start { background:linear-gradient(135deg,#dc2626,#ef4444); color:white; font-size:0.95rem; padding:12px 28px; box-shadow:0 4px 14px rgba(220,38,38,0.3); }
+.btn-end   { background:var(--surface-3); color:var(--text-primary); border:1px solid var(--border); }
+.ctrl-divider { width:1px; height:24px; background:var(--border); margin:0 8px; }
+
+/* Side Panels */
+.side-panel { display:flex; flex-direction:column; gap:16px; }
+.live-panel { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
+.panel-head { padding:14px 18px; font-weight:700; font-size:0.875rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.panel-body { padding:14px; max-height:300px; overflow-y:auto; }
+.panel-body::-webkit-scrollbar { width:4px; }
+.panel-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+
+/* Student Grid */
+.students-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.student-vid-box { background:#0a0a0a; border-radius:10px; aspect-ratio:4/3; position:relative; overflow:hidden; border:2px solid transparent; }
+.student-vid-box.active { border-color:#22c55e; }
+.student-vid-box video { width:100%; height:100%; object-fit:cover; }
+.s-label { position:absolute; bottom:6px; left:6px; background:rgba(0,0,0,0.7); font-size:0.65rem; padding:3px 8px; border-radius:6px; color:white; }
+
+.student-list-item { background:var(--surface-2); border-radius:10px; padding:10px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; border:1px solid transparent; transition:all 0.15s; }
+.student-list-item.warned { border-color:#f59e0b; background:rgba(245,158,11,0.05); }
+.student-list-item.kicked  { border-color:#ef4444; background:rgba(239,68,68,0.05); opacity:0.6; }
+
+/* Questions */
+.q-btn { background:var(--surface-2); color:var(--text-secondary); border:1px solid var(--border); border-radius:8px; padding:8px 14px; font-size:0.8rem; font-weight:600; cursor:pointer; transition:all 0.15s; flex:1; }
+.q-btn:hover { background:var(--primary); color:white; border-color:var(--primary); }
+
+/* Alerts */
+.alert-item { padding:10px 14px; border-radius:10px; margin-bottom:8px; font-size:0.8rem; border-left:3px solid transparent; }
+.alert-success { background:rgba(34,197,94,0.1); border-color:#22c55e; color:#166534; }
+.alert-warning { background:rgba(245,158,11,0.1); border-color:#f59e0b; color:#92400e; }
+.alert-danger  { background:rgba(239,68,68,0.1); border-color:#ef4444; color:#991b1b; }
+
+/* Notes */
+#notesArea { width:100%; background:var(--surface-2); border:1px solid var(--border); color:var(--text-primary); border-radius:10px; padding:14px; font-size:0.85rem; font-family:var(--font); outline:none; resize:vertical; min-height:100px; transition:border 0.2s; }
+#notesArea:focus { border-color:var(--primary); }
+
+/* Chat overrides for dark theme compatibility */
+.dark-mode .alert-success { color: #4ade80; }
+.dark-mode .alert-warning { color: #fbbf24; }
+.dark-mode .alert-danger { color: #f87171; }
+</style>
+
+<div class="classroom-wrap">
+
+    <!-- Top Bar -->
+    <div class="live-top-bar">
+        <div class="d-flex align-items-center gap-3">
+            <div style="background:var(--surface-2); border:1px solid var(--border); padding:8px 14px; border-radius:10px; display:inline-flex; align-items:center; font-weight:600; font-size:0.85rem;">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Waiting to Start</span>
+            </div>
+            <div>
+                <div style="font-weight:700; font-size:1.1rem; color:var(--text-primary);">{{ classroom.session_title }}</div>
+                <div style="font-size:0.75rem; color:var(--text-muted);">{{ classroom.course_code }}</div>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button id="startBtn" class="ctrl-btn btn-start" onclick="startClass()">
+                <i class="fas fa-play"></i> Start Session
+            </button>
+            <button id="endBtn" class="ctrl-btn btn-end d-none" onclick="endClass()">
+                <i class="fas fa-stop"></i> End Session
+            </button>
+        </div>
+    </div>
+
+    <div class="main-grid">
+
+        <!-- Left: Video + Controls -->
+        <div class="video-area">
+
+            <!-- Main video display -->
+            <div class="main-video-box" id="mainVideoBox">
+                <video id="localVideo" autoplay muted playsinline></video>
+                <canvas id="whiteboardCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair;z-index:10;display:none;"></canvas>
+                <div class="video-label" id="videoLabel"><i class="fas fa-video-slash me-2"></i>Camera Off</div>
+                <!-- PiP: small camera when screen sharing -->
+                <div class="pip-video" id="pipBox" style="display:none;">
+                    <video id="pipVideo" autoplay muted playsinline></video>
+                </div>
+                <!-- Placeholder -->
+                <div id="videoPlaceholder" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--text-muted);">
+                    <div style="font-size:3.5rem;margin-bottom:10px;opacity:0.5;"><i class="fas fa-video-slash"></i></div>
+                    <p style="font-size:0.9rem;font-weight:600;">Enable camera or screen share</p>
+                </div>
+            </div>
+
+            <!-- Controls Dashboard -->
+            <div class="controls-dashboard">
+                <button class="ctrl-btn btn-cam" id="camBtn" onclick="toggleCamera()">
+                    <i class="fas fa-video"></i> Camera
+                </button>
+                <button class="ctrl-btn btn-screen" id="screenBtn" onclick="toggleScreen()">
+                    <i class="fas fa-desktop"></i> Screen
+                </button>
+                <button class="ctrl-btn btn-mic" id="micBtn" onclick="toggleMic()">
+                    <i class="fas fa-microphone"></i> Audio
+                </button>
+                <div class="ctrl-divider"></div>
+                <button class="ctrl-btn btn-wb" id="whiteboardBtn" onclick="toggleWhiteboard()">
+                    <i class="fas fa-pen"></i> Whiteboard
+                </button>
+                <div class="ctrl-divider"></div>
+                <button class="ctrl-btn" style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2);" onclick="sendRandomQuestion()">
+                    <i class="fas fa-dice"></i> Quick Q
+                </button>
+                <button class="ctrl-btn" style="background:rgba(236,72,153,0.1);color:#ec4899;border:1px solid rgba(236,72,153,0.2);" onclick="openPollModal()">
+                    <i class="fas fa-poll"></i> Poll
+                </button>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <!-- Questions -->
+                    <div class="live-panel h-100">
+                        <div class="panel-head">
+                            <span style="color:#3b82f6;"><i class="fas fa-question-circle me-2"></i>Proctoring Questions</span>
+                        </div>
+                        <div class="panel-body">
+                            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+                                {% for q in questions %}
+                                {% set q_onclick = 'onclick="sendQuestion(' ~ loop.index0 ~ ')"' %}
+                                <button class="q-btn" {{ q_onclick | safe }}>Q{{ loop.index }}</button>
+                                {% endfor %}
+                            </div>
+                            <div id="lastQuestion" style="background:var(--surface-2);padding:10px 14px;border-radius:10px;font-size:0.8rem;color:var(--text-secondary);display:none;border:1px solid var(--border);">
+                                <strong style="color:var(--text-primary);display:block;margin-bottom:2px;">Last sent:</strong> <span id="lastQText"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <!-- Notes -->
+                    <div class="live-panel h-100">
+                        <div class="panel-head">
+                            <span style="color:#22c55e;"><i class="fas fa-edit me-2"></i>Class Notes</span>
+                            <span style="font-size:0.7rem;font-weight:400;color:var(--text-muted);background:var(--surface-2);padding:2px 8px;border-radius:10px;">Post-class share</span>
+                        </div>
+                        <div class="panel-body">
+                            <textarea id="notesArea" placeholder="Draft notes here for the AI summary..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Panel -->
+        <div class="side-panel">
+
+            <!-- Alerts -->
+            <div class="live-panel">
+                <div class="panel-head">
+                    <span style="color:#ef4444;"><i class="fas fa-bell me-2"></i>Alerts</span>
+                    <span class="badge bg-danger rounded-pill" id="alertCount">0</span>
+                </div>
+                <div class="panel-body" id="alertBox">
+                    <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem;">
+                        <i class="fas fa-check-circle" style="font-size:1.5rem;margin-bottom:8px;opacity:0.5;display:block;"></i>
+                        No alerts yet
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confusion Meter -->
+            <div class="live-panel">
+                <div class="panel-head">
+                    <span style="color:#f59e0b;"><i class="fas fa-tachometer-alt me-2"></i>Pace & Confusion</span>
+                </div>
+                <div class="panel-body">
+                    <div style="background:var(--surface-2);border:1px solid var(--border);height:16px;border-radius:8px;overflow:hidden;margin-bottom:8px;">
+                        <div id="confusionBar" style="background:linear-gradient(90deg,#f59e0b,#ef4444);height:100%;width:0%;transition:width 0.5s cubic-bezier(0.4,0,0.2,1);"></div>
+                    </div>
+                    <div style="font-size:0.8rem;color:var(--text-secondary);display:flex;justify-content:space-between;">
+                        <span>Clear</span>
+                        <span id="confusionText" style="font-weight:600;">0 signals</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Online Students -->
+            <div class="live-panel">
+                <div class="panel-head">
+                    <span style="color:#8b5cf6;"><i class="fas fa-users me-2"></i>Roster</span>
+                    <span class="badge bg-primary rounded-pill" id="onlineCount" style="font-weight:600;">0 Online</span>
+                </div>
+                <div class="panel-body" id="studentList">
+                    <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.85rem;">
+                        Waiting for students to join...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Cameras -->
+            <div class="live-panel">
+                <div class="panel-head">
+                    <span style="color:#06b6d4;"><i class="fas fa-video me-2"></i>Student Feeds</span>
+                </div>
+                <div class="panel-body">
+                    <button class="ctrl-btn w-100 mb-3" id="breakoutBtn" style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2);justify-content:center;" onclick="startBreakoutRooms()">
+                        <i class="fas fa-random"></i> Split into Breakout Pairs
+                    </button>
+                    <div class="mb-3">
+                        <select id="monitorBreakout" class="form-select" onchange="monitorRoom(this.value)" style="display:none;background:var(--surface-2);border-color:var(--border);color:var(--text-primary);font-size:0.85rem;border-radius:10px;">
+                            <option value="">Monitor: Main Classroom</option>
+                        </select>
+                    </div>
+                    <button class="ctrl-btn w-100 mb-3" id="endBreakoutBtn" style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);justify-content:center;display:none;" onclick="endBreakoutRooms()">
+                        <i class="fas fa-times"></i> End Breakout Sessions
+                    </button>
+                    <div class="students-grid" id="studentCamGrid">
+                        <div style="grid-column:span 2;text-align:center;padding:10px;color:var(--text-muted);font-size:0.8rem;">
+                            No cameras active
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Answer Summary -->
+            <div class="live-panel">
+                <div class="panel-head">
+                    <span style="color:#a855f7;"><i class="fas fa-chart-bar me-2"></i>Answer Rates</span>
+                </div>
+                <div class="panel-body" id="answerSummary">
+                    <div style="text-align:center;padding:10px;color:var(--text-muted);font-size:0.8rem;">
+                        No questions sent
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Poll Results -->
+            <div class="live-panel" id="pollResultsCard" style="display:none;border-color:var(--primary);">
+                <div class="panel-head" style="background:rgba(59,130,246,0.1);">
+                    <span style="color:#3b82f6;"><i class="fas fa-poll me-2"></i>Active Poll</span>
+                    <span class="badge bg-primary rounded-pill" id="pollVotesCount">0 votes</span>
+                </div>
+                <div class="panel-body">
+                    <div id="pollQText" style="font-weight:700;margin-bottom:12px;font-size:0.9rem;color:var(--text-primary);"></div>
+                    <div id="pollBars" style="display:flex;flex-direction:column;gap:10px;"></div>
+                    <button class="ctrl-btn w-100 mt-3" style="background:var(--surface-3);color:var(--text-primary);justify-content:center;" onclick="endPoll()">Close Poll</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Poll Creation Modal -->
+<div id="pollModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:9999;">
+    <div style="background:#1a1a2e;width:400px;margin:10% auto;border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.5);">
+        <div style="background:#0dcaf0;padding:16px;color:#111;font-weight:bold;font-size:1.1rem;display:flex;justify-content:space-between;align-items:center;">
+            <span>Create Custom Poll</span>
+            <span style="cursor:pointer;" onclick="document.getElementById('pollModal').style.display='none'">✖</span>
+        </div>
+        <div style="padding:20px;color:white;">
+            <div class="mb-3">
+                <label style="font-size:0.85rem;color:#aaa;margin-bottom:6px;display:block;">Question</label>
+                <input type="text" id="pollInputQ" class="form-control" style="background:#111;border:1px solid #333;color:white;" placeholder="e.g. Do you understand this topic?">
+            </div>
+            <div class="mb-3">
+                <label style="font-size:0.85rem;color:#aaa;margin-bottom:6px;display:block;">Options</label>
+                <input type="text" id="pollOpt1" class="form-control mb-2" style="background:#111;border:1px solid #333;color:white;" placeholder="Option 1" value="Yes">
+                <input type="text" id="pollOpt2" class="form-control mb-2" style="background:#111;border:1px solid #333;color:white;" placeholder="Option 2" value="No">
+                <input type="text" id="pollOpt3" class="form-control mb-2" style="background:#111;border:1px solid #333;color:white;" placeholder="Option 3 (Optional)">
+                <input type="text" id="pollOpt4" class="form-control mb-2" style="background:#111;border:1px solid #333;color:white;" placeholder="Option 4 (Optional)">
+            </div>
+            <button class="btn btn-info w-100 mt-2" onclick="startPoll()">🚀 Launch Poll</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+<script id="teacherClassData" type="application/json">
+{
+  "session_id": {{ session_id }},
+  "questions": {{ questions | tojson }}
+}
+</script>
+<script>
+const _cData = JSON.parse(document.getElementById('teacherClassData').textContent);
+const SESSION_ID = _cData.session_id;
+const questions = _cData.questions;
+let socket = io();
+let localStream = null;
+let screenStream = null;
+let cameraOn = false;
+let screenOn = false;
+let micOn = true;
+let classStarted = false;
+let students = {};
+let alertCount = 0;
+let peerConnections = {};
+let activeBreakoutRoom = null;
+
+// Speech Recognition for AI Summary
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let classTranscript = "";
+
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.onresult = (event) => {
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+                classTranscript += event.results[i][0].transcript + ". ";
+            }
+        }
+    };
+    recognition.onend = () => {
+        // restart if class active and mic on
+        if (classStarted && micOn) {
+            try { recognition.start(); } catch(e){}
+        }
+    };
+}
+
+const iceConfig = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+    ]
+};
+
+// Join room
+socket.emit('join_classroom', {
+    session_id: SESSION_ID,
+    user_type: 'teacher'
+});
+
+// ── Socket Events ──────────────────────────────────────────────────
+
+socket.on('student_joined', function(data) {
+    students[data.student_id] = {
+        name: data.name, missed: 0, answers: 0, status: 'active'
+    };
+    updateStudentList();
+    addAlert(`✅ ${data.name} joined`, 'success');
+
+    // If we have a stream, send offer to new student
+    if (localStream || screenStream) {
+        createOffer(data.student_id);
+    }
+});
+
+socket.on('student_answered', function(data) {
+    if (students[data.student_id]) students[data.student_id].answers++;
+    updateStudentList();
+    addAnswerSummary(data);
+});
+
+socket.on('alert_teacher', function(data) {
+    if (students[data.student_id]) {
+        students[data.student_id].missed = data.missed_count;
+        students[data.student_id].status = 'warned';
+    }
+    updateStudentList();
+    addAlert(`⚠️ ${data.student_name} missed ${data.missed_count} questions!`, 'warning');
+});
+
+socket.on('kick_student', function(data) {
+    if (students[data.student_id]) students[data.student_id].status = 'kicked';
+    updateStudentList();
+    addAlert(`🚨 ${data.student_name} auto-removed (3 missed)`, 'danger');
+});
+
+socket.on('student_declined', function(data) {
+    addAlert(`❌ ${data.student_name} cannot attend this class`, 'warning');
+    updateStudentList();
+});
+
+socket.on('student_left', function(data) {
+    addAlert(`👋 ${data.student_name} left the class`, 'info');
+    if (students[data.student_id]) {
+        students[data.student_id].status = 'left';
+    }
+    updateStudentList();
+});
+
+socket.on('attendance_updated', function(data) {
+    if (students[data.student_id]) students[data.student_id].status = data.status;
+    updateStudentList();
+});
+
+// WebRTC signaling
+socket.on('answer', async function(data) {
+    if (peerConnections[data.from]) {
+        await peerConnections[data.from].setRemoteDescription(
+            new RTCSessionDescription(data.sdp)
+        );
+    }
+});
+
+socket.on('ice_candidate', async function(data) {
+    if (peerConnections[data.from]) {
+        await peerConnections[data.from].addIceCandidate(
+            new RTCIceCandidate(data.candidate)
+        );
+    }
+});
+
+socket.on('student_video_stream', function(data) {
+    addStudentCamera(data.student_id, data.student_name);
+});
+
+socket.on('offer', async function(data) {
+    // Teacher receives offer from student (for student camera)
+    const pc = getOrCreatePC(data.from);
+    await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    socket.emit('answer', {
+        session_id: SESSION_ID,
+        to: data.from,
+        from: 'teacher',
+        sdp: answer
+    });
+});
+
+// ── WebRTC Functions ───────────────────────────────────────────────
+
+function getOrCreatePC(studentId) {
+    if (!peerConnections[studentId]) {
+        const pc = new RTCPeerConnection(iceConfig);
+        peerConnections[studentId] = pc;
+
+        pc.onicecandidate = (e) => {
+            if (e.candidate) {
+                socket.emit('ice_candidate', {
+                    session_id: SESSION_ID,
+                    to: studentId,
+                    from: 'teacher',
+                    candidate: e.candidate
+                });
+            }
+        };
+
+        pc.ontrack = (e) => {
+            // Received student video
+            addStudentCameraStream(studentId, e.streams[0]);
+        };
+    }
+    return peerConnections[studentId];
+}
+
+async function createOffer(studentId) {
+    const pc = getOrCreatePC(studentId);
+    const stream = screenStream || localStream;
+    if (stream) {
+        stream.getTracks().forEach(track => {
+            pc.addTrack(track, stream);
+        });
+    }
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    socket.emit('offer', {
+        session_id: SESSION_ID,
+        to: studentId,
+        from: 'teacher',
+        sdp: offer
+    });
+}
+
+// ── Camera/Screen Controls ─────────────────────────────────────────
+
+async function toggleCamera() {
+    if (!cameraOn) {
+        try {
+            localStream = await navigator.mediaDevices.getUserMedia({
+                video: { width:1280, height:720 }, audio: true
+            });
+            document.getElementById('localVideo').srcObject = localStream;
+            document.getElementById('videoPlaceholder').style.display = 'none';
+            document.getElementById('videoLabel').textContent = '📷 Your Camera';
+            document.getElementById('camBtn').textContent = '📷 Stop Camera';
+            document.getElementById('camBtn').style.background = '#dc3545';
+            cameraOn = true;
+
+            // If screen is sharing, show camera in PiP
+            if (screenOn) {
+                document.getElementById('pipVideo').srcObject = localStream;
+                document.getElementById('pipBox').style.display = 'block';
+            }
+
+            // Send to all connected students
+            Object.keys(students).forEach(sid => createOffer(sid));
+            socket.emit('teacher_video_on', { session_id: SESSION_ID, type: 'camera' });
+
+        } catch(e) {
+            addAlert('❌ Camera access denied: ' + e.message, 'danger');
+        }
+    } else {
+        if (localStream) {
+            localStream.getVideoTracks().forEach(t => t.stop());
+            if (!screenOn) {
+                document.getElementById('localVideo').srcObject = null;
+                document.getElementById('videoPlaceholder').style.display = 'block';
+                document.getElementById('videoLabel').textContent = '📷 Camera Off';
+            }
+            document.getElementById('pipBox').style.display = 'none';
+        }
+        document.getElementById('camBtn').textContent = '📷 Start Camera';
+        document.getElementById('camBtn').style.background = '#198754';
+        cameraOn = false;
+    }
+}
+
+async function toggleScreen() {
+    if (!screenOn) {
+        try {
+            screenStream = await navigator.mediaDevices.getDisplayMedia({
+                video: { cursor: 'always' }, audio: true
+            });
+            document.getElementById('localVideo').srcObject = screenStream;
+            document.getElementById('videoPlaceholder').style.display = 'none';
+            document.getElementById('videoLabel').textContent = '🖥️ Screen Share';
+            document.getElementById('screenBtn').textContent = '🖥️ Stop Screen';
+            document.getElementById('screenBtn').style.background = '#dc3545';
+            screenOn = true;
+
+            // Show camera in PiP if camera is on
+            if (cameraOn && localStream) {
+                document.getElementById('pipVideo').srcObject = localStream;
+                document.getElementById('pipBox').style.display = 'block';
+            }
+
+            // Send to students
+            Object.keys(students).forEach(sid => createOffer(sid));
+            socket.emit('teacher_video_on', { session_id: SESSION_ID, type: 'screen' });
+
+            // Handle screen share stop
+            screenStream.getVideoTracks()[0].onended = () => {
+                stopScreen();
+            };
+
+        } catch(e) {
+            addAlert('❌ Screen share cancelled or denied', 'warning');
+        }
+    } else {
+        stopScreen();
+    }
+}
+
+function stopScreen() {
+    if (screenStream) screenStream.getTracks().forEach(t => t.stop());
+    screenOn = false;
+    document.getElementById('screenBtn').textContent = '🖥️ Share Screen';
+    document.getElementById('screenBtn').style.background = '#0f3460';
+
+    // Switch back to camera if on
+    if (cameraOn && localStream) {
+        document.getElementById('localVideo').srcObject = localStream;
+        document.getElementById('videoLabel').textContent = '📷 Your Camera';
+        document.getElementById('pipBox').style.display = 'none';
+    } else {
+        document.getElementById('localVideo').srcObject = null;
+        document.getElementById('videoPlaceholder').style.display = 'block';
+        document.getElementById('videoLabel').textContent = '📷 Camera Off';
+    }
+}
+
+function toggleMic() {
+    const stream = localStream || screenStream;
+    if (stream) {
+        stream.getAudioTracks().forEach(t => { t.enabled = !t.enabled; });
+    }
+    micOn = !micOn;
+    document.getElementById('micBtn').textContent = micOn ? '🎤 Mute' : '🔇 Unmute';
+    document.getElementById('micBtn').style.background = micOn ? '#6f42c1' : '#343a40';
+    
+    if (recognition) {
+        if (micOn && classStarted) {
+            try { recognition.start(); } catch(e){}
+        } else {
+            recognition.stop();
+        }
+    }
+}
+
+// ── Class Controls ─────────────────────────────────────────────────
+
+function startClass() {
+    socket.emit('start_class', { session_id: SESSION_ID });
+    classStarted = true;
+    if (recognition && micOn) {
+        try { recognition.start(); } catch(e){}
+    }
+    document.getElementById('startBtn').classList.add('d-none');
+    document.getElementById('endBtn').classList.remove('d-none');
+    document.getElementById('statusText').textContent = '🔴 LIVE';
+    document.getElementById('statusDot').classList.add('live');
+    addAlert('✅ Class started! Students can now join.', 'success');
+}
+
+function endClass() {
+    if (!confirm('End the class?')) return;
+    const notes = document.getElementById('notesArea').value;
+    if (recognition) recognition.stop();
+    socket.emit('end_class', { session_id: SESSION_ID, notes: notes, transcript: classTranscript });
+    document.getElementById('statusText').textContent = '⏹ Class Ended';
+    document.getElementById('endBtn').disabled = true;
+    setTimeout(() => {
+        window.location.href = `/classroom/session-report/{{ session_id }}`;
+    }, 1500);
+}
+
+// ── Questions ──────────────────────────────────────────────────────
+
+function sendQuestion(idx) {
+    const q = questions[idx];
+    socket.emit('send_question', { session_id: SESSION_ID, question: q });
+    document.getElementById('lastQText').textContent = q.q;
+    document.getElementById('lastQuestion').style.display = 'block';
+    addAlert(`📤 Question ${idx+1} sent to all students`, 'info');
+}
+
+function sendRandomQuestion() {
+    const idx = Math.floor(Math.random() * questions.length);
+    sendQuestion(idx);
+}
+
+// ── UI Updates ─────────────────────────────────────────────────────
+
+function updateStudentList() {
+    const list = document.getElementById('studentList');
+    const count = Object.keys(students).length;
+    document.getElementById('onlineCount').textContent = `${count} online`;
+
+    if (count === 0) {
+        list.innerHTML = '<p style="color:#555;font-size:0.8rem;text-align:center;">Waiting for students...</p>';
+        return;
+    }
+
+    let html = '';
+    for (const [id, stu] of Object.entries(students)) {
+        let cls = '';
+        let badge = '<span class="badge bg-success" style="font-size:0.65rem;">Online</span>';
+        if (stu.status === 'warned') { cls = 'warned'; badge = '<span class="badge bg-warning text-dark" style="font-size:0.65rem;">⚠️ Warning</span>'; }
+        if (stu.status === 'kicked') { cls = 'kicked'; badge = '<span class="badge bg-danger" style="font-size:0.65rem;">Kicked</span>'; }
+        if (stu.distracted) { cls = 'warned'; badge = '<span class="badge bg-danger" style="font-size:0.65rem;">👀 Tab Hidden</span>'; }
+
+        const penBtn = stu.has_pen
+            ? `<button onclick="togglePen(${id}, false)" style="background:#dc3545;color:white;border:none;border-radius:4px;font-size:0.65rem;padding:2px 6px;margin-top:4px;">❌ Revoke Pen</button>`
+            : `<button onclick="togglePen(${id}, true)" style="background:#0dcaf0;color:#111;border:none;border-radius:4px;font-size:0.65rem;padding:2px 6px;margin-top:4px;">🖍️ Give Pen</button>`;
+
+        html += `<div class="student-item ${cls}">
+            <div>
+                <div style="font-size:0.85rem;font-weight:600;">👤 ${stu.name}</div>
+                <div style="font-size:0.7rem;color:#888;">Missed: ${stu.missed||0} | Answered: ${stu.answers||0}</div>
+                ${penBtn}
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+                ${badge}
+                <select onchange="modifyAttendance(${id}, this.value)"
+                        style="background:#333;color:white;border:none;border-radius:6px;
+                               padding:2px 4px;font-size:0.7rem;">
+                    <option value="present">Present</option>
+                    <option value="absent">Absent</option>
+                    <option value="late">Late</option>
+                </select>
+            </div>
+        </div>`;
+    }
+    list.innerHTML = html;
+}
+
+function addStudentCamera(studentId, studentName) {
+    const grid = document.getElementById('studentCamGrid');
+    const existing = document.getElementById(`scam_${studentId}`);
+    if (existing) return;
+    const p = grid.querySelector('p');
+    if (p) p.remove();
+
+    const box = document.createElement('div');
+    box.className = 'student-vid-box active';
+    box.id = `scam_${studentId}`;
+    box.innerHTML = `<video autoplay playsinline style="width:100%;height:100%;object-fit:cover;"></video>
+                     <div class="s-label">👤 ${studentName || 'Student'}</div>`;
+    grid.appendChild(box);
+}
+
+function addStudentCameraStream(studentId, stream) {
+    const box = document.getElementById(`scam_${studentId}`);
+    if (box) {
+        box.querySelector('video').srcObject = stream;
+    } else {
+        const grid = document.getElementById('studentCamGrid');
+        const p = grid.querySelector('p');
+        if (p) p.remove();
+        const newBox = document.createElement('div');
+        newBox.className = 'student-vid-box active';
+        newBox.id = `scam_${studentId}`;
+        newBox.innerHTML = `<video autoplay playsinline style="width:100%;height:100%;object-fit:cover;"></video>
+                            <div class="s-label">👤 Student</div>`;
+        newBox.querySelector('video').srcObject = stream;
+        grid.appendChild(newBox);
+    }
+}
+
+function addAlert(msg, type) {
+    const box = document.getElementById('alertBox');
+    const p = box.querySelector('p');
+    if (p) p.remove();
+    alertCount++;
+    document.getElementById('alertCount').textContent = alertCount;
+    const div = document.createElement('div');
+    div.className = `alert-item alert-${type}`;
+    div.textContent = msg;
+    box.insertBefore(div, box.firstChild);
+    setTimeout(() => div.style.opacity = '0.5', 4000);
+}
+
+function addAnswerSummary(data) {
+    const div = document.getElementById('answerSummary');
+    const p = div.querySelector('p');
+    if (p) p.remove();
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:6px 8px;border-bottom:1px solid #333;font-size:0.78rem;';
+    const icon = data.is_correct ? '✅' : '❌';
+    item.innerHTML = `${icon} <strong>${data.student_name}</strong> — ${data.time_taken}s`;
+    div.insertBefore(item, div.firstChild);
+}
+
+function togglePen(studentId, givePen) {
+    if (students[studentId]) {
+        students[studentId].has_pen = givePen;
+        socket.emit(givePen ? 'grant_whiteboard_access' : 'revoke_whiteboard_access', {
+            session_id: SESSION_ID,
+            student_id: studentId,
+            student_name: students[studentId].name
+        });
+        updateStudentList();
+        addAlert(`Marker ${givePen ? 'given to' : 'revoked from'} ${students[studentId].name}`, 'info');
+    }
+}
+
+function modifyAttendance(studentId, status) {
+    socket.emit('teacher_modify_attendance', {
+        session_id: SESSION_ID, student_id: studentId, status: status
+    });
+}
+
+// ── Focus & Confusion Tracking ─────────────────────────────────────
+
+let activeConfusionSignals = new Set();
+
+socket.on('confusion_signal', function(data) {
+    activeConfusionSignals.add(data.student_id);
+    updateConfusionMeter();
+    
+    // Auto remove signal after 10 seconds
+    setTimeout(() => {
+        activeConfusionSignals.delete(data.student_id);
+        updateConfusionMeter();
+    }, 10000);
+});
+
+function updateConfusionMeter() {
+    const total = Object.keys(students).length;
+    const confused = activeConfusionSignals.size;
+    let pct = total > 0 ? Math.round((confused / total) * 100) : 0;
+    document.getElementById('confusionBar').style.width = pct + '%';
+    document.getElementById('confusionText').textContent = `${confused} recent signals (${pct}%)`;
+    
+    if (pct >= 30 && confused > 1) {
+        addAlert(`🐢 ${pct}% of class signaled you're going too fast!`, 'warning');
+    }
+}
+
+socket.on('student_distracted', function(data) {
+    if (students[data.student_id]) {
+        students[data.student_id].distracted = data.is_distracted;
+        updateStudentList();
+        if (data.is_distracted) {
+            addAlert(`👀 ${data.student_name} switched away from the classroom tab!`, 'danger');
+        }
+    }
+});
+
+// ── Hand Raising & Whiteboard ──────────────────────────────────────
+
+socket.on('student_raised_hand', function(data) {
+    addAlert(`✋ ${data.student_name} raised their hand!`, 'info');
+});
+
+const canvas = document.getElementById('whiteboardCanvas');
+const ctx = canvas.getContext('2d');
+let drawing = false;
+let wbActive = false;
+let lastX = 0, lastY = 0;
+
+function resizeCanvas() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+setTimeout(resizeCanvas, 1000);
+
+function toggleWhiteboard() {
+    wbActive = !wbActive;
+    if(wbActive) {
+        document.getElementById('localVideo').style.opacity = '0.2';
+        canvas.style.display = 'block';
+        if(canvas.width === 0) resizeCanvas();
+        document.getElementById('whiteboardBtn').style.background = '#dc3545';
+        document.getElementById('whiteboardBtn').innerHTML = '✏️ Stop Whiteboard';
+    } else {
+        document.getElementById('localVideo').style.opacity = '1';
+        canvas.style.display = 'none';
+        document.getElementById('whiteboardBtn').style.background = '#0a58ca';
+        document.getElementById('whiteboardBtn').innerHTML = '✏️ Whiteboard';
+    }
+}
+
+socket.on('draw_line', function(data) {
+    if (data.breakout_id !== activeBreakoutRoom) return; // Private room isolation
+    if(canvas.width === 0) resizeCanvas();
+    ctx.strokeStyle = data.color || '#ffc107';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(data.x0 * canvas.width, data.y0 * canvas.height);
+    ctx.lineTo(data.x1 * canvas.width, data.y1 * canvas.height);
+    ctx.stroke();
+});
+
+canvas.addEventListener('mousedown', e => {
+    drawing = true;
+    const rect = canvas.getBoundingClientRect();
+    lastX = e.clientX - rect.left;
+    lastY = e.clientY - rect.top;
+});
+canvas.addEventListener('mouseup', () => drawing = false);
+canvas.addEventListener('mouseout', () => drawing = false);
+canvas.addEventListener('mousemove', e => {
+    if(!drawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    ctx.strokeStyle = '#0dcaf0';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+
+    socket.emit('draw_line', {
+        session_id: SESSION_ID,
+        breakout_id: activeBreakoutRoom,
+        x0: lastX / canvas.width,
+        y0: lastY / canvas.height,
+        x1: x / canvas.width,
+        y1: y / canvas.height,
+        color: '#0dcaf0'
+    });
+
+    lastX = x;
+    lastY = y;
+});
+
+// allow clearing via double click
+canvas.addEventListener('dblclick', () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    socket.emit('clear_whiteboard', { session_id: SESSION_ID, breakout_id: activeBreakoutRoom });
+});
+
+// ── Breakout Rooms Orchestration ───────────────────────────────────
+function startBreakoutRooms() {
+    let onlineStudentIds = Object.keys(students).filter(id => students[id].status !== 'kicked' && students[id].status !== 'offline');
+    if (onlineStudentIds.length < 2) {
+        addAlert("Not enough students to form pairs!", "warning");
+        return;
+    }
+    
+    // Shuffle Array
+    onlineStudentIds.sort(() => Math.random() - 0.5);
+    
+    let pairs = [];
+    for(let i=0; i < onlineStudentIds.length; i+=2) {
+        pairs.push(onlineStudentIds.slice(i, i+2));
+    }
+    
+    let rooms = [];
+    pairs.forEach((pair, index) => {
+        let roomId = `breakout_${SESSION_ID}_${Math.random().toString(36).substr(2, 9)}`;
+        rooms.push({ id: roomId, name: `Pair ${index+1}`, students: pair });
+        
+        pair.forEach(sid => {
+            if(students[sid]) students[sid].has_pen = true; // Visual state update
+            socket.emit('assign_breakout', {
+                session_id: SESSION_ID,
+                student_id: sid,
+                breakout_id: roomId,
+                room_name: `Pair ${index+1}`
+            });
+        });
+    });
+    
+    updateStudentList();
+    
+    const select = document.getElementById('monitorBreakout');
+    select.innerHTML = '<option value="">Monitor: Main Classroom</option>';
+    rooms.forEach(r => {
+        select.innerHTML += `<option value="${r.id}">${r.name} (${r.students.length} students)</option>`;
+    });
+    
+    select.style.display = 'block';
+    document.getElementById('endBreakoutBtn').style.display = 'block';
+    document.getElementById('breakoutBtn').style.display = 'none';
+    
+    addAlert(`🤝 Created ${rooms.length} breakout pairs! Students now have private whiteboards.`, 'success');
+}
+
+function monitorRoom(roomId) {
+    activeBreakoutRoom = roomId ? roomId : null;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function endBreakoutRooms() {
+    socket.emit('end_breakout', { session_id: SESSION_ID });
+    activeBreakoutRoom = null;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Reset state
+    Object.keys(students).forEach(id => {
+        if(students[id]) students[id].has_pen = false;
+    });
+    updateStudentList();
+    
+    document.getElementById('monitorBreakout').style.display = 'none';
+    document.getElementById('endBreakoutBtn').style.display = 'none';
+    document.getElementById('breakoutBtn').style.display = 'block';
+    addAlert("❌ Ended all Breakout Rooms.", "info");
+}
+
+socket.on('whiteboard_toggle', function(data) {
+    // Handle remote whiteboard events if needed
+});
+
+// ── Polling ────────────────────────────────────────────────────────
+
+let pollActive = false;
+let currentPollId = null;
+let pollOptionsCount = [];
+let totalPollVotes = 0;
+let currentPollOptions = [];
+
+function openPollModal() {
+    document.getElementById('pollModal').style.display = 'block';
+}
+
+function startPoll() {
+    const q = document.getElementById('pollInputQ').value.trim();
+    if (!q) { alert('Please enter a question'); return; }
+    
+    // gather non-empty options
+    const rawOpts = [
+        document.getElementById('pollOpt1').value.trim(),
+        document.getElementById('pollOpt2').value.trim(),
+        document.getElementById('pollOpt3').value.trim(),
+        document.getElementById('pollOpt4').value.trim()
+    ];
+    const opts = rawOpts.filter(o => o.length > 0);
+    if (opts.length < 2) { alert('Please enter at least 2 options'); return; }
+
+    currentPollId = 'poll_' + Date.now();
+    pollActive = true;
+    pollOptionsCount = new Array(opts.length).fill(0);
+    totalPollVotes = 0;
+    currentPollOptions = opts;
+
+    socket.emit('start_poll', {
+        session_id: SESSION_ID,
+        poll_id: currentPollId,
+        question: q,
+        options: opts
+    });
+
+    // Update UI
+    document.getElementById('pollModal').style.display = 'none';
+    document.getElementById('pollResultsCard').style.display = 'block';
+    document.getElementById('pollQText').textContent = q;
+    
+    renderPollResults(currentPollOptions);
+    addAlert('📊 Poll launched', 'info');
+}
+
+function renderPollResults(opts) {
+    const container = document.getElementById('pollBars');
+    let html = '';
+    for(let i=0; i<opts.length; i++) {
+        let count = pollOptionsCount[i];
+        let pct = totalPollVotes > 0 ? Math.round((count / totalPollVotes) * 100) : 0;
+        html += `<div style="margin-bottom:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#bbb;">
+                <span>${opts[i]}</span>
+                <span>${pct}% (${count})</span>
+            </div>
+            <div style="background:#111;height:8px;border-radius:4px;overflow:hidden;margin-top:2px;">
+                <div style="background:#0dcaf0;height:100%;width:${pct}%;transition:width 0.3s;"></div>
+            </div>
+        </div>`;
+    }
+    container.innerHTML = html;
+    document.getElementById('pollVotesCount').textContent = totalPollVotes + ' votes';
+}
+
+function endPoll() {
+    if(!pollActive) return;
+    socket.emit('end_poll', { session_id: SESSION_ID, poll_id: currentPollId });
+    pollActive = false;
+    document.getElementById('pollResultsCard').style.display = 'none';
+    addAlert('🛑 Poll ended', 'warning');
+}
+
+socket.on('poll_response', function(data) {
+    if(pollActive && data.poll_id === currentPollId) {
+        if(data.option_index >= 0 && data.option_index < pollOptionsCount.length) {
+            pollOptionsCount[data.option_index]++;
+            totalPollVotes++;
+            renderPollResults(currentPollOptions);
+        }
+    }
+});
+</script>
+{% endblock %}

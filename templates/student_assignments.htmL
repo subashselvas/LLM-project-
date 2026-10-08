@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}My Assignments{% endblock %}
+{% block page_title %}My Assignments{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div><h1>📝 My Assignments</h1><p>View and submit your course assignments</p></div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}{% for cat,msg in messages %}
+    <div class="alert alert-{{ 'danger' if cat=='error' else cat }}">{{ msg }}</div>
+    {% endfor %}{% endif %}
+{% endwith %}
+
+{% if assignments %}
+    <!-- Pending -->
+    {% set pending = assignments|selectattr('sub_status','equalto',none)|list %}
+    {% if pending %}
+    <h2 class="section-label mb-3">⏳ Pending ({{ pending|length }})</h2>
+    <div class="row g-3 mb-4">
+        {% for a in pending %}
+        <div class="col-md-6">
+            <div class="card" style="border-left:4px solid {{ '#dc2626' if a.is_overdue else '#1a56db' }};">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 style="font-weight:700;margin:0;">{{ a.title }}</h6>
+                            <small style="color:var(--text-3);">
+                                {{ a.course_code }} — {{ a.course_name }}
+                            </small>
+                        </div>
+                        {% if a.is_overdue %}
+                        <span class="badge bg-danger">Overdue</span>
+                        {% else %}
+                        <span class="badge bg-primary">Pending</span>
+                        {% endif %}
+                    </div>
+                    {% if a.description %}
+                    <p style="font-size:0.85rem;color:var(--text-2);margin-bottom:12px;">
+                        {{ a.description[:100] }}...
+                    </p>
+                    {% endif %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <small style="color:{{ '#dc2626' if a.is_overdue else 'var(--text-2)' }};">
+                            📅 Due: <strong>{{ a.due_date }}</strong>
+                        </small>
+                        <small style="color:var(--text-2);">
+                            Max: <strong>{{ a.max_marks }} marks</strong>
+                        </small>
+                    </div>
+                    {% if not a.is_overdue %}
+                    <button onclick="showSubmitModal({{ a.id }}, '{{ a.title }}')"
+                            class="btn btn-primary w-100 btn-sm">
+                        <i class="fas fa-upload"></i> Submit Assignment
+                    </button>
+                    {% else %}
+                    <button class="btn w-100 btn-sm" style="background:#fee2e2;color:#dc2626;" disabled>
+                        ❌ Deadline Passed
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Submitted -->
+    {% set submitted = assignments|rejectattr('sub_status','equalto',none)|list %}
+    {% if submitted %}
+    <h2 class="section-label mb-3">✅ Submitted ({{ submitted|length }})</h2>
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Assignment</th>
+                        <th>Course</th>
+                        <th>Submitted</th>
+                        <th>Status</th>
+                        <th>Marks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in submitted %}
+                    <tr>
+                        <td style="font-weight:600;">{{ a.title }}</td>
+                        <td>{{ a.course_code }}</td>
+                        <td style="font-size:0.85rem;">
+                            {{ a.submitted_at[:16] if a.submitted_at else '—' }}
+                        </td>
+                        <td>
+                            <span class="badge {{ 'bg-success' if a.sub_status == 'graded' else 'bg-warning' }}">
+                                {{ a.sub_status|title }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if a.marks is not none %}
+                            <strong style="color:{{ '#16a34a' if a.marks >= a.max_marks*0.6 else '#dc2626' }};">
+                                {{ a.marks }}/{{ a.max_marks }}
+                            </strong>
+                            {% else %}
+                            <span class="text-muted">Pending</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-state-icon">📝</div>
+    <h5>No assignments yet</h5>
+    <p>Your teachers haven't posted any assignments yet</p>
+</div>
+{% endif %}
+
+<!-- Submit Modal -->
+<div id="submitModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+     background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:16px;padding:32px;max-width:460px;width:90%;
+                box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <h5 style="font-weight:700;margin-bottom:4px;">📤 Submit Assignment</h5>
+        <p style="color:var(--text-2);font-size:0.85rem;margin-bottom:20px;" id="modalAssignmentName"></p>
+        <form method="POST" enctype="multipart/form-data" id="submitForm">
+            <div class="mb-4">
+                <label class="form-label">Upload Your File *</label>
+                <input type="file" class="form-control" name="file" required
+                       accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.zip,.pptx,.xlsx">
+                <small class="text-muted">
+                    Allowed: PDF, DOC, DOCX, TXT, PNG, JPG, ZIP, PPTX, XLSX (Max 16MB)
+                </small>
+            </div>
+            <div class="p-3 rounded mb-3" style="background:#eff4ff;border-left:4px solid #1a56db;">
+                <small>⚠️ You can only submit once. Make sure your file is correct before submitting.</small>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Submit
+                </button>
+                <button type="button" onclick="closeSubmitModal()" class="btn btn-secondary">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showSubmitModal(assignmentId, title) {
+    document.getElementById('modalAssignmentName').textContent = title;
+    document.getElementById('submitForm').action = `/student/assignments/${assignmentId}/submit`;
+    document.getElementById('submitModal').style.display = 'flex';
+}
+function closeSubmitModal() {
+    document.getElementById('submitModal').style.display = 'none';
+}
+</script>
+{% endblock %}
