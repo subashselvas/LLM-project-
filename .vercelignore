@@ -1,0 +1,35 @@
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Git
+.git/
+.gitignore
+
+# Python cache & compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+logs/
+*.log
+temp_err.log
+
+# Utility/scratch scripts not needed in serverless runtime
+scratch/
+debug.py
+text.py
+detect_unused.py
+add_sample_data.py
+add_sample_attendance.py
+fix_data.py
+
+# Local configs and editor files
+.env
+.env.local
+.vscode/
+.idea/
+LLM PROJECT.code-workspace

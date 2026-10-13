@@ -1,0 +1,31 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# Environment Variables
+.env
+.env.local
+
+# Logs and databases
+logs/
+*.log
+temp_err.log
+
+# Uploads and temporary test files
+# Note: Keep placeholder directories in repo if needed
+scratch/
+.pytest_cache/
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+LLM PROJECT.code-workspace

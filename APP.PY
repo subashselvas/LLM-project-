@@ -41,30 +41,50 @@ load_dotenv()
 
 app = Flask(__name__, template_folder='templates', static_folder='static')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', secrets.token_hex(32))
-app.config['DATABASE'] = os.environ.get('DATABASE_URI', 'database.db')
+db_uri = os.environ.get('DATABASE_URI')
+if not db_uri:
+    if os.environ.get('VERCEL'):
+        tmp_db = '/tmp/database.db'
+        if not os.path.exists(tmp_db) and os.path.exists('database.db'):
+            try:
+                import shutil
+                shutil.copyfile('database.db', tmp_db)
+            except Exception:
+                pass
+        db_uri = tmp_db if os.path.exists(tmp_db) else 'database.db'
+    else:
+        db_uri = 'database.db'
+app.config['DATABASE'] = db_uri
 app.config['ITEMS_PER_PAGE'] = 20
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'png', 'jpg', 'jpeg', 'zip', 'pptx', 'xlsx'}
 
 # Create uploads folder if not exists
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'assignments'), exist_ok=True)
-os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'submissions'), exist_ok=True)
-app.config['DEBUG'] = True
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+try:
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'assignments'), exist_ok=True)
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'submissions'), exist_ok=True)
+except Exception:
+    pass
+
+app.config['DEBUG'] = False if os.environ.get('VERCEL') else True
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading' if os.environ.get('VERCEL') else 'eventlet')
 
 # Setup logging
-if not os.path.exists('logs'):
-    os.makedirs('logs')
-
-file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
-file_handler.setFormatter(logging.Formatter(
-    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-))
-file_handler.setLevel(logging.INFO)
-app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
+if not os.environ.get('VERCEL'):
+    try:
+        if not os.path.exists('logs'):
+            os.makedirs('logs', exist_ok=True)
+        file_handler = RotatingFileHandler('logs/app.log', maxBytes=1024 * 1024, backupCount=5, delay=True)
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+        ))
+        file_handler.setLevel(logging.INFO)
+        app.logger.addHandler(file_handler)
+    except Exception:
+        pass
 app.logger.info('Student Management System startup')
 
 # ============================================================================
