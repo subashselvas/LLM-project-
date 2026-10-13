@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% block title %}Browse Courses — EduCore{% endblock %}
+{% block page_title %}Course Discovery{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Hero */
+.discover-hero {
+    background: linear-gradient(135deg, #0f172a, #1d4ed8);
+    border-radius: 20px;
+    padding: 32px 36px;
+    color: white;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 12px 32px rgba(29, 78, 216, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+.discover-hero::before {
+    content: ''; position: absolute; top: -50px; right: -50px; width: 200px; height: 200px;
+    background: rgba(255,255,255,0.05); border-radius: 50%;
+}
+.discover-hero::after {
+    content: ''; position: absolute; bottom: -80px; left: 20%; width: 300px; height: 300px;
+    background: rgba(255,255,255,0.03); border-radius: 50%;
+}
+.hero-content { position: relative; z-index: 1; max-width: 600px; }
+.hero-title { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+.hero-sub { font-size: 0.95rem; opacity: 0.85; margin: 0; line-height: 1.5; }
+
+/* Control Bar */
+.control-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
+}
+.search-wrapper {
+    position: relative; flex: 1; max-width: 400px;
+}
+.search-wrapper i {
+    position: absolute; left: 16px; top: 50%; transform: translateY(-50%);
+    color: var(--text-muted); font-size: 0.9rem;
+}
+.search-input {
+    width: 100%; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 16px 12px 40px; font-size: 0.9rem;
+    color: var(--text-primary); font-family: var(--font); outline: none; transition: all 0.2s;
+}
+.search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+.search-input::placeholder { color: var(--text-muted); }
+
+/* Apply Grid */
+.apply-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+}
+
+/* Course Card */
+.course-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; overflow: hidden; transition: all 0.2s;
+    display: flex; flex-direction: column;
+}
+.course-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.1); }
+.cc-top { padding: 18px 20px 14px; border-bottom: 1px dashed var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.cc-code { display: inline-flex; align-items: center; justify-content: center; background: rgba(37,99,235,0.1); color: var(--primary); padding: 4px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; border: 1px solid rgba(37,99,235,0.2); }
+.cc-name { font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 8px 0 0; line-height: 1.3; letter-spacing: -0.3px; }
+.cc-dept { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: flex; align-items: center; gap: 6px; }
+
+.cc-body { padding: 16px 20px; flex: 1; }
+.cc-desc { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin: 0 0 16px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+.cc-meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.cc-meta-item { display: flex; flex-direction: column; gap: 2px; }
+.cc-meta-lbl { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+.cc-meta-val { font-size: 0.85rem; color: var(--text-primary); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+
+.cc-footer { padding: 16px 20px; border-top: 1px solid var(--border); background: var(--surface-2); display: flex; align-items: center; justify-content: space-between; }
+.cc-status { font-size: 0.8rem; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+
+/* Status Badges */
+.badge-enrolled { color: #166534; background: rgba(34,197,94,0.15); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(34,197,94,0.2); }
+.badge-pending  { color: #9a3412; background: rgba(249,115,22,0.15); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(249,115,22,0.2); }
+.badge-rejected { color: #991b1b; background: rgba(239,68,68,0.15); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(239,68,68,0.2); }
+.badge-full     { color: #475569; background: rgba(100,116,139,0.15); padding: 6px 12px; border-radius: 10px; border: 1px solid rgba(100,116,139,0.2); }
+
+.apply-btn { font-size: 0.85rem; font-weight: 700; padding: 10px 20px; border-radius: 10px; background: var(--primary); color: white; border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
+.apply-btn:hover { transform: translateY(-1px); filter: brightness(1.1); box-shadow: 0 6px 16px rgba(37,99,235,0.3); }
+
+/* Dark mode tweaks */
+.dark-mode .badge-enrolled { color: #4ade80; }
+.dark-mode .badge-pending  { color: #fb923c; }
+.dark-mode .badge-rejected { color: #f87171; }
+.dark-mode .badge-full     { color: #94a3b8; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Hero -->
+<div class="discover-hero">
+    <div class="hero-content">
+        <h1 class="hero-title">Course Discovery Hub</h1>
+        <p class="hero-sub">Explore new subjects, find courses taught by top faculty, and submit your applications for the upcoming semester.</p>
+    </div>
+    <div style="position:relative;z-index:1;">
+        <a href="{{ url_for('student_my_applications') }}" class="btn" style="background:var(--surface);color:var(--text-primary);font-weight:700;border-radius:12px;padding:12px 20px;border:none;box-shadow:0 10px 25px rgba(0,0,0,0.15);">
+            <i class="fas fa-clipboard-list me-2" style="color:var(--primary);"></i> My Applications
+        </a>
+    </div>
+</div>
+
+<!-- Controls -->
+<div class="control-bar">
+    <div class="search-wrapper">
+        <i class="fas fa-search"></i>
+        <input type="text" class="search-input" id="courseSearch" placeholder="Search by course name, code, or department..." oninput="filterCourses()">
+    </div>
+    <div style="font-size:0.85rem;color:var(--text-muted);font-weight:600;">
+        {{ courses|length }} courses available
+    </div>
+</div>
+
+<!-- Grid -->
+<div class="apply-grid" id="courseList">
+    {% if courses %}
+    {% for course in courses %}
+    <div class="course-card" data-search="{{ course.course_code|lower }} {{ course.course_name|lower }} {{ (course.dept_name or '')|lower }}">
+        <div class="cc-top">
+            <div>
+                <div class="cc-code"><i class="fas fa-fingerprint me-1" style="font-size:0.6rem;opacity:0.7;"></i>{{ course.course_code }}</div>
+                <h3 class="cc-name">{{ course.course_name }}</h3>
+                <div class="cc-dept"><i class="fas fa-building" style="color:var(--primary);"></i> {{ course.dept_name or 'Interdisciplinary' }}</div>
+            </div>
+            <!-- Progress pie for capacity -->
+            {% set capa = ((course.enrolled_count / course.max_students * 100)|int) if course.max_students > 0 else 0 %}
+            <div style="width:40px;height:40px;border-radius:50%;background:conic-gradient(var(--primary) {{ capa }}%, var(--surface-3) {{ capa }}%);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <div style="width:32px;height:32px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:800;color:var(--text-primary);">
+                    {{ capa }}%
+                </div>
+            </div>
+        </div>
+
+        <div class="cc-body">
+            <p class="cc-desc" title="{{ course.description }}">{{ course.description or "No detailed description provided by the instructor." }}</p>
+            
+            <div class="cc-meta-grid">
+                <div class="cc-meta-item">
+                    <span class="cc-meta-lbl">Instructor</span>
+                    <span class="cc-meta-val"><i class="fas fa-user-tie" style="color:var(--text-muted);"></i> {{ course.instructor_first or 'TBA' }} {{ course.instructor_last or '' }}</span>
+                </div>
+                <div class="cc-meta-item">
+                    <span class="cc-meta-lbl">Credits</span>
+                    <span class="cc-meta-val">{{ course.credits }} Credits</span>
+                </div>
+                <div class="cc-meta-item">
+                    <span class="cc-meta-lbl">Schedule</span>
+                    <span class="cc-meta-val"><i class="fas fa-clock" style="color:var(--text-muted);"></i> {{ course.schedule or 'TBA' }}</span>
+                </div>
+                <div class="cc-meta-item">
+                    <span class="cc-meta-lbl">Seats</span>
+                    <span class="cc-meta-val"><i class="fas fa-users" style="color:var(--text-muted);"></i> {{ course.enrolled_count }}/{{ course.max_students }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="cc-footer">
+            {% if course.id in enrolled_ids %}
+                <span class="cc-status badge-enrolled"><i class="fas fa-check-circle"></i> Already Enrolled</span>
+            {% elif course.id in applied and applied[course.id] == 'pending' %}
+                <span class="cc-status badge-pending"><i class="fas fa-clock"></i> Application Pending</span>
+            {% elif course.id in applied and applied[course.id] == 'rejected' %}
+                <span class="cc-status badge-rejected"><i class="fas fa-times-circle"></i> Application Rejected</span>
+            {% elif course.enrolled_count >= course.max_students %}
+                <span class="cc-status badge-full"><i class="fas fa-ban"></i> Class Full</span>
+            {% else %}
+                <div style="font-size:0.75rem;color:var(--text-secondary);"><i class="fas fa-door-open me-1"></i> Admissions open</div>
+                {% set apply_onclick = 'onclick="openApplyModal(' ~ course.id ~ ', \'' ~ course.course_code ~ '\', \'' ~ course.course_name|e ~ '\')"' %}
+                <button class="apply-btn" {{ apply_onclick | safe }}>Apply Now <i class="fas fa-arrow-right ms-1"></i></button>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div style="grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--text-muted);">
+        <div style="font-size:4rem;margin-bottom:16px;opacity:0.3;">🔭</div>
+        <div style="font-size:1.2rem;font-weight:700;color:var(--text-primary);margin-bottom:8px;">No courses available</div>
+        <div style="font-size:0.9rem;">There are no active courses open for enrollment right now.</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Apply Modal -->
+<div class="modal fade" id="applyModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,0.2);">
+            <div class="modal-header" style="border-bottom:1px solid var(--border);padding:24px;">
+                <h5 class="modal-title" style="font-weight:800;color:var(--text-primary);letter-spacing:-0.5px;">Course Application</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:var(--invert-dark);"></button>
+            </div>
+            <form id="applyForm" method="POST" action="">
+                <div class="modal-body" style="padding:28px 24px;">
+                    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px;">
+                        <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;margin-bottom:4px;">Selected Course</div>
+                        <div id="modalCourseName" style="font-size:1.05rem;font-weight:700;color:var(--text-primary);"></div>
+                    </div>
+                    <div>
+                        <label class="form-label" style="font-size:0.85rem;font-weight:700;color:var(--text-primary);">Statement of Purpose (Optional)</label>
+                        <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:12px;">Let the instructor know why you are interested in this course or how it aligns with your academic goals.</p>
+                        <textarea class="form-control" name="reason" rows="4" style="background:var(--surface);border-color:var(--border);color:var(--text-primary);border-radius:12px;padding:12px;font-size:0.9rem;resize:vertical;" placeholder="I am applying because..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid var(--border);padding:20px 24px;background:var(--surface-2);">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius:10px;font-weight:600;padding:10px 20px;">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="border-radius:10px;font-weight:700;padding:10px 24px;box-shadow:0 4px 12px rgba(37,99,235,0.2);">Submit Application <i class="fas fa-paper-plane ms-1"></i></button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function openApplyModal(courseId, courseCode, courseName) {
+    document.getElementById('applyForm').action = '/student/apply-courses/' + courseId;
+    document.getElementById('modalCourseName').textContent = courseCode + ' — ' + courseName;
+    new bootstrap.Modal(document.getElementById('applyModal')).show();
+}
+
+function filterCourses() {
+    const query = document.getElementById('courseSearch').value.toLowerCase();
+    document.querySelectorAll('.course-card').forEach(card => {
+        const text = card.getAttribute('data-search');
+        card.style.display = text.includes(query) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+{% block title %}My Courses — EduCore{% endblock %}
+{% block page_title %}My Courses{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Course card gradients — cycle through 8 premium pairs */
+.course-gradients { --g0:linear-gradient(135deg,#1e3a8a,#2563eb); --g1:linear-gradient(135deg,#0c4a6e,#0891b2); --g2:linear-gradient(135deg,#4c1d95,#7c3aed); --g3:linear-gradient(135deg,#064e3b,#059669); --g4:linear-gradient(135deg,#7f1d1d,#dc2626); --g5:linear-gradient(135deg,#78350f,#d97706); --g6:linear-gradient(135deg,#1e1b4b,#4338ca); --g7:linear-gradient(135deg,#0f172a,#0891b2); }
+
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 4px;
+}
+
+.course-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+.course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.3);
+}
+
+/* Gradient cover */
+.course-cover {
+    height: 110px;
+    position: relative;
+    overflow: hidden;
+    padding: 20px 22px 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+.course-cover::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 50%;
+    background: linear-gradient(to top, rgba(0,0,0,0.35), transparent);
+}
+.course-cover-code {
+    position: relative;
+    z-index: 1;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+    margin-bottom: 3px;
+}
+.course-cover-name {
+    position: relative;
+    z-index: 1;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+    margin-bottom: 14px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+/* Abstract background pattern */
+.course-cover-pattern {
+    position: absolute;
+    top: -20px; right: -20px;
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+}
+.course-cover-pattern2 {
+    position: absolute;
+    bottom: -40px; left: 30%;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+}
+
+/* Card body */
+.course-body {
+    padding: 18px 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.course-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+.instructor-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+.instructor-avatar {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #60a5fa, #818cf8);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+}
+
+/* Progress ring */
+.progress-ring-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.progress-ring-svg { flex-shrink: 0; transform: rotate(-90deg); }
+.progress-ring-track { fill: none; stroke: var(--surface-3); stroke-width: 4; }
+.progress-ring-fill  { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+.progress-ring-pct { font-size: 0.7rem; font-weight: 700; color: var(--text-primary); }
+.progress-ring-lbl { font-size: 0.65rem; color: var(--text-muted); margin-top: 1px; }
+
+/* Status + Grade */
+.course-meta-pills {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.meta-pill {
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 0.68rem;
+    font-weight: 700;
+}
+.pill-enrolled { background: rgba(34,197,94,0.1);  color: #4ade80; }
+.pill-grade    { background: rgba(250,204,21,0.1);  color: #fbbf24; }
+.pill-progress { background: rgba(59,130,246,0.1);  color: #60a5fa; }
+.pill-credits  { background: rgba(148,163,184,0.1); color: #94a3b8; }
+
+/* Action buttons */
+.course-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 4px;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+}
+.course-action-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    text-decoration: none;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-secondary);
+    transition: all 0.15s;
+}
+.course-action-btn:hover { background: var(--surface-3); color: var(--text-primary); }
+.course-action-btn.primary {
+    background: linear-gradient(135deg, #1d4ed8, #06b6d4);
+    color: white;
+    border-color: transparent;
+}
+.course-action-btn.primary:hover { filter: brightness(1.1); color: white; }
+
+/* Page header */
+.page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.page-header-title { font-size: 1.1rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.3px; }
+.page-header-sub   { font-size: 0.8rem; color: var(--text-muted); margin-top: 1px; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <div class="page-header-title">My Enrolled Courses</div>
+        <div class="page-header-sub">{{ courses|length }} course{{ 's' if courses|length != 1 }} this semester</div>
+    </div>
+    <a href="{{ url_for('student_apply_courses') }}" style="display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border-radius:12px;background:var(--primary);color:white;font-size:0.82rem;font-weight:600;text-decoration:none;">
+        <i class="fas fa-plus"></i> Add Course
+    </a>
+</div>
+
+{% if courses %}
+<!-- gradient class injected so CSS variables are available in Jinja context -->
+<div class="course-gradients" style="display:none;"></div>
+
+<div class="courses-grid">
+    {% set gradients = [
+        'linear-gradient(135deg,#1e3a8a,#2563eb)',
+        'linear-gradient(135deg,#0c4a6e,#0891b2)',
+        'linear-gradient(135deg,#4c1d95,#7c3aed)',
+        'linear-gradient(135deg,#064e3b,#059669)',
+        'linear-gradient(135deg,#7f1d1d,#dc2626)',
+        'linear-gradient(135deg,#78350f,#d97706)',
+        'linear-gradient(135deg,#1e1b4b,#4338ca)',
+        'linear-gradient(135deg,#0f172a,#0891b2)'
+    ] %}
+    {% set ring_colors = ['#60a5fa','#22d3ee','#a78bfa','#4ade80','#f87171','#fbbf24','#818cf8','#38bdf8'] %}
+
+    {% for course in courses %}
+    {% set gi = loop.index0 % 8 %}
+    {% set grad = gradients[gi] %}
+    {% set rc   = ring_colors[gi] %}
+    {% set pct  = course.progress or 0 %}
+    {% set circumference = 100 %}
+    {% set offset = circumference * (1 - pct / 100) %}
+
+    <div class="course-card">
+        <!-- Cover -->
+        <div class="course-cover" style="background:{{ grad }};">
+            <div class="course-cover-pattern"></div>
+            <div class="course-cover-pattern2"></div>
+            <div class="course-cover-code">{{ course.course_code }}</div>
+            <div class="course-cover-name">{{ course.course_name }}</div>
+        </div>
+
+        <!-- Body -->
+        <div class="course-body">
+            <!-- Instructor -->
+            <div class="instructor-chip">
+                <div class="instructor-avatar">
+                    {{ course.instructor_first[0] if course.instructor_first else '?' }}
+                </div>
+                {{ course.instructor_first }} {{ course.instructor_last or '' }}
+                {% if course.dept_name %}&nbsp;·&nbsp; {{ course.dept_name }}{% endif %}
+            </div>
+
+            <!-- Progress ring + pills -->
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="course-meta-pills">
+                    {% if course.grade %}
+                    <span class="meta-pill pill-grade">Grade: {{ course.grade }}</span>
+                    {% else %}
+                    <span class="meta-pill pill-progress">In Progress</span>
+                    {% endif %}
+                    {% if course.credits %}
+                    <span class="meta-pill pill-credits">{{ course.credits }} Credits</span>
+                    {% endif %}
+                    <span class="meta-pill pill-enrolled">Enrolled</span>
+                </div>
+
+                <!-- SVG Progress Ring -->
+                <div class="progress-ring-wrap">
+                    <svg class="progress-ring-svg" width="44" height="44" viewBox="0 0 44 44">
+                        <circle class="progress-ring-track" cx="22" cy="22" r="16"/>
+                        <circle class="progress-ring-fill"
+                                cx="22" cy="22" r="16"
+                                stroke="{{ rc }}"
+                                stroke-dasharray="{{ circumference }}"
+                                stroke-dashoffset="{{ offset }}"
+                                data-offset="{{ offset }}"/>
+                    </svg>
+                    <div>
+                        <div class="progress-ring-pct">{{ pct }}%</div>
+                        <div class="progress-ring-lbl">Progress</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="course-actions">
+                <a href="{{ url_for('student_flashcards', course_id=course.id) }}" class="course-action-btn primary">
+                    <i class="fas fa-layer-group"></i> Study Cards
+                </a>
+                <a href="{{ url_for('student_attendance') }}" class="course-action-btn">
+                    <i class="fas fa-calendar-check"></i> Attendance
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div style="text-align:center;padding:64px 20px;color:var(--text-muted);">
+    <div style="font-size:3rem;margin-bottom:16px;opacity:0.3;">📚</div>
+    <div style="font-size:1rem;font-weight:600;margin-bottom:8px;color:var(--text-primary);">No courses enrolled yet</div>
+    <div style="font-size:0.85rem;margin-bottom:20px;">Start by applying for courses to begin your academic journey.</div>
+    <a href="{{ url_for('student_apply_courses') }}" style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:12px;background:var(--primary);color:white;font-size:0.85rem;font-weight:600;text-decoration:none;">
+        <i class="fas fa-plus"></i> Browse Courses
+    </a>
+</div>
+{% endif %}
+
+<script>
+// Animate SVG progress rings on load
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.progress-ring-fill').forEach(function(circle) {
+        const offset = parseFloat(circle.getAttribute('data-offset'));
+        const circumference = parseFloat(circle.getAttribute('stroke-dasharray'));
+        circle.style.strokeDashoffset = circumference; // start at 0%
+        setTimeout(function() {
+            circle.style.strokeDashoffset = offset;
+        }, 200);
+    });
+});
+</script>
+
+{% endblock %}

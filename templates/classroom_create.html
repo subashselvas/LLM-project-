@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+{% block title %}Start Live Class — EduCore{% endblock %}
+{% block page_title %}Live Classroom{% endblock %}
+
+{% block extra_css %}
+<style>
+.golive-wrapper {
+    min-height: calc(100vh - var(--topbar-h) - 48px);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    align-items: start;
+}
+@media(max-width: 900px) { .golive-wrapper { grid-template-columns: 1fr; } }
+
+/* Left — Form Panel */
+.glassform {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 36px;
+    position: relative;
+    overflow: hidden;
+}
+.glassform::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #ef4444, #f97316, #ef4444);
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+}
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+.glassform-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+}
+.glassform-sub {
+    font-size: 0.83rem;
+    color: var(--text-muted);
+    margin-bottom: 28px;
+}
+
+/* Course select cards */
+.course-option-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.course-option-label {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    transition: all 0.18s;
+    background: var(--surface-2);
+}
+.course-option-label:hover { border-color: #ef4444; background: rgba(239,68,68,0.04); }
+.course-option-label.selected { border-color: #ef4444; background: rgba(239,68,68,0.08); }
+.course-option-label input[type=radio] { display: none; }
+.course-radio-dot {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+}
+.course-option-label.selected .course-radio-dot {
+    border-color: #ef4444;
+    background: #ef4444;
+}
+.course-option-label.selected .course-radio-dot::after {
+    content: '';
+    width: 6px; height: 6px;
+    background: white;
+    border-radius: 50%;
+}
+.course-code-chip {
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: rgba(239,68,68,0.1);
+    color: #ef4444;
+    flex-shrink: 0;
+}
+
+/* Session title input */
+.session-input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-family: var(--font);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+    margin-top: 8px;
+}
+.session-input:focus {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.1);
+}
+.session-input::placeholder { color: var(--text-muted); }
+
+/* Go Live button */
+.golive-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 15px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px rgba(220,38,38,0.35);
+    position: relative;
+    overflow: hidden;
+    margin-top: 28px;
+}
+.golive-btn::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -60%;
+    width: 60%; height: 200%;
+    background: rgba(255,255,255,0.15);
+    transform: skewX(-20deg);
+    animation: btnShine 2.5s ease-in-out infinite;
+}
+@keyframes btnShine { 0%{left:-60%} 100%{left:160%} }
+.golive-btn:hover { transform: scale(1.02); box-shadow: 0 8px 28px rgba(220,38,38,0.45); filter: brightness(1.05); }
+.golive-btn:active { transform: scale(1); }
+
+/* Live pulse dot */
+.live-pulse {
+    width: 10px; height: 10px;
+    background: white;
+    border-radius: 50%;
+    animation: livePulse 1s ease-in-out infinite;
+}
+@keyframes livePulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.7)} }
+
+/* Right — Info Panel */
+.info-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.feature-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 22px 24px;
+    transition: transform 0.2s;
+}
+.feature-card:hover { transform: translateY(-2px); }
+.feature-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.feature-card-icon {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+.feature-card-title { font-weight: 700; font-size: 0.9rem; color: var(--text-primary); }
+.feature-card-sub   { font-size: 0.75rem; color: var(--text-muted); }
+
+.feature-list { display: flex; flex-direction: column; gap: 10px; }
+.feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.83rem;
+    color: var(--text-secondary);
+}
+.feature-check {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: rgba(34,197,94,0.12);
+    color: #4ade80;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* Sessions link */
+.sessions-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border-radius: 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    text-decoration: none;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.18s;
+}
+.sessions-link:hover { background: var(--surface-3); color: var(--text-primary); transform: translateX(4px); }
+
+.form-label-custom {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    display: block;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for cat,msg in messages %}
+<div class="alert alert-{{ 'danger' if cat=='error' else cat }} mb-3">{{ msg }}</div>
+{% endfor %}{% endif %}
+{% endwith %}
+
+<div class="golive-wrapper">
+
+    <!-- ── LEFT: Form ──────────────────────────── -->
+    <div class="glassform">
+        <div class="golive-title">
+            <div class="d-flex align-items-center gap-3 mb-2">
+                <div style="width:44px;height:44px;background:rgba(239,68,68,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🎥</div>
+                <div>
+                    <div class="glassform-title">Start a Live Class</div>
+                    <div class="glassform-sub">Students are notified instantly when you go live</div>
+                </div>
+            </div>
+        </div>
+
+        <form method="POST">
+            <!-- Course Select -->
+            <div class="mb-4">
+                <label class="form-label-custom">Select Course</label>
+                {% if courses %}
+                <div class="course-option-grid" id="courseOptions">
+                    {% for course in courses %}
+                    <label class="course-option-label" for="course_{{ course.id }}" onclick="selectCourse(this)">
+                        <div class="course-radio-dot"></div>
+                        <input type="radio" name="course_id" id="course_{{ course.id }}" value="{{ course.id }}" required>
+                        <span class="course-code-chip">{{ course.course_code }}</span>
+                        <span style="font-weight:600;font-size:0.875rem;color:var(--text-primary);">{{ course.course_name }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div style="padding:24px;text-align:center;color:var(--text-muted);background:var(--surface-2);border-radius:12px;font-size:0.85rem;">
+                    No courses assigned to you yet.
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Session Title -->
+            <div class="mb-2">
+                <label class="form-label-custom" for="session_title">Session Title</label>
+                <input type="text" class="session-input" id="session_title" name="session_title"
+                       placeholder="e.g., Lecture 5 — Arrays and Linked Lists" value="Live Class">
+            </div>
+
+            <!-- Go Live Button -->
+            {% if courses %}
+            <button type="submit" class="golive-btn">
+                <span class="live-pulse"></span>
+                Go Live Now
+                <i class="fas fa-arrow-right"></i>
+            </button>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- ── RIGHT: Info Panel ──────────────────── -->
+    <div class="info-panel">
+
+        <!-- What Happens -->
+        <div class="feature-card">
+            <div class="feature-card-header">
+                <div class="feature-card-icon" style="background:rgba(239,68,68,0.1);">⚡</div>
+                <div>
+                    <div class="feature-card-title">What Happens When You Go Live</div>
+                    <div class="feature-card-sub">Automated classroom management</div>
+                </div>
+            </div>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <span class="feature-check"><i class="fas fa-check"></i></span>
+                    All enrolled students receive an <strong>instant push notification</strong>
+                </div>
+                <div class="feature-item">
+                    <span class="feature-check"><i class="fas fa-check"></i></span>
+                    <strong>AI proctoring</strong> questions sent at random intervals to verify presence
+                </div>
+                <div class="feature-item">
+                    <span class="feature-check"><i class="fas fa-check"></i></span>
+                    Attendance is <strong>automatically marked</strong> when students join
+                </div>
+                <div class="feature-item">
+                    <span class="feature-check"><i class="fas fa-check"></i></span>
+                    Students missing 3 questions are <strong>auto-removed</strong> from the session
+                </div>
+                <div class="feature-item">
+                    <span class="feature-check"><i class="fas fa-check"></i></span>
+                    <strong>Live transcript</strong> generated via speech recognition
+                </div>
+                <div class="feature-item">
+                    <span class="feature-check"><i class="fas fa-check"></i></span>
+                    AI generates <strong>session summary notes</strong> on class end
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Features -->
+        <div class="feature-card">
+            <div class="feature-card-header">
+                <div class="feature-card-icon" style="background:rgba(139,92,246,0.1);">🤖</div>
+                <div>
+                    <div class="feature-card-title">AI-Powered Classroom Tools</div>
+                    <div class="feature-card-sub">Available during your live session</div>
+                </div>
+            </div>
+            <div class="feature-list">
+                <div class="feature-item">
+                    <span class="feature-check" style="background:rgba(139,92,246,0.12);color:#a78bfa;"><i class="fas fa-check"></i></span>
+                    <strong>Confusion Meter</strong> — students signal if pace is too fast
+                </div>
+                <div class="feature-item">
+                    <span class="feature-check" style="background:rgba(139,92,246,0.12);color:#a78bfa;"><i class="fas fa-check"></i></span>
+                    <strong>Breakout Rooms</strong> — split students into collaborative pairs
+                </div>
+                <div class="feature-item">
+                    <span class="feature-check" style="background:rgba(139,92,246,0.12);color:#a78bfa;"><i class="fas fa-check"></i></span>
+                    <strong>Shared Whiteboard</strong> — real-time collaborative canvas
+                </div>
+                <div class="feature-item">
+                    <span class="feature-check" style="background:rgba(139,92,246,0.12);color:#a78bfa;"><i class="fas fa-check"></i></span>
+                    <strong>Gamification Badges</strong> awarded for perfect scores
+                </div>
+            </div>
+        </div>
+
+        <!-- Link to Past Sessions -->
+        <a href="{{ url_for('classroom_sessions') }}" class="sessions-link">
+            <div style="width:36px;height:36px;background:var(--surface-3);border-radius:9px;display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-history" style="color:var(--text-muted);font-size:0.9rem;"></i>
+            </div>
+            <div>
+                <div style="font-size:0.85rem;font-weight:600;color:var(--text-primary);">View Past Sessions</div>
+                <div style="font-size:0.73rem;color:var(--text-muted);">transcripts, recordings & reports</div>
+            </div>
+            <i class="fas fa-arrow-right ms-auto" style="color:var(--text-muted);font-size:0.85rem;"></i>
+        </a>
+
+        <!-- Back link -->
+        <a href="{{ url_for('teacher_dashboard') }}" style="display:flex;align-items:center;gap:8px;color:var(--text-muted);text-decoration:none;font-size:0.82rem;padding:0 4px;">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+</div>
+
+<script>
+function selectCourse(label) {
+    document.querySelectorAll('.course-option-label').forEach(l => l.classList.remove('selected'));
+    label.classList.add('selected');
+    label.querySelector('input').checked = true;
+}
+// Auto-select first course
+const firstLabel = document.querySelector('.course-option-label');
+if (firstLabel) selectCourse(firstLabel);
+</script>
+
+{% endblock %}

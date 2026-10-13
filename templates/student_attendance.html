@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}My Attendance{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-calendar-check"></i> Attendance Records</h2>
+            <hr>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h6>Present</h6>
+                    <h3>{{ stats.present_count or 0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h6>Absent</h6>
+                    <h3>{{ stats.absent_count or 0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h6>Late</h6>
+                    <h3>{{ stats.late_count or 0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h6>Excused</h6>
+                    <h3>{{ stats.excused_count or 0 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Chart -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Attendance Overview</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="attendanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attendance Records -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Recent Attendance Records</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="attendanceTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Course</th>
+                                    <th>Status</th>
+                                    <th>Check In</th>
+                                    <th>Check Out</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in attendance %}
+                                <tr>
+                                    <td>{{ record.date }}</td>
+                                    <td>{{ record.course_code }} - {{ record.course_name }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if record.status == 'present' else 'danger' if record.status == 'absent' else 'warning' }}">
+                                            {{ record.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ record.check_in_time or '-' }}</td>
+                                    <td>{{ record.check_out_time or '-' }}</td>
+                                    <td>{{ record.notes or '-' }}</td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No attendance records found</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataTable
+    $('#attendanceTable').DataTable({
+        order: [[0, 'desc']],
+        pageLength: 25,
+        language: {
+            search: "Search:",
+            lengthMenu: "Show _MENU_ entries per page",
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            paginate: {
+                first: "First",
+                last: "Last",
+                next: "Next",
+                previous: "Previous"
+            }
+        }
+    });
+
+    // Create Attendance Chart
+    var ctx = document.getElementById('attendanceChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Present', 'Absent', 'Late', 'Excused'],
+            datasets: [{
+                data: [
+                    {{ stats.present_count or 0 }},
+                    {{ stats.absent_count or 0 }},
+                    {{ stats.late_count or 0 }},
+                    {{ stats.excused_count or 0 }}
+                ],
+                backgroundColor: ['#28a745', '#dc3545', '#ffc107', '#17a2b8'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

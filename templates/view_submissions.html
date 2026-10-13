@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}View Submissions{% endblock %}
+{% block page_title %}Submissions{% endblock %}
+
+{% block content %}
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h1>📋 View Submissions</h1>
+        <p>{{ assignment.course_code }} — {{ assignment.course_name }}</p>
+    </div>
+    <a href="{{ url_for('faculty_assignments', course_id=assignment.course_id) }}" class="btn btn-secondary">
+        ← Back to Assignments
+    </a>
+</div>
+
+<div class="row g-4">
+    <!-- Assignment Details -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">Assignment Info</div>
+            <div class="card-body">
+                <h5>{{ assignment.title }}</h5>
+                <p class="text-muted small mb-3">{{ assignment.description or 'No description provided.' }}</p>
+                
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Due Date:</span>
+                    <strong>{{ assignment.due_date }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Max Marks:</span>
+                    <strong>{{ assignment.max_marks }}</strong>
+                </div>
+                {% if assignment.file_path %}
+                <div class="mt-3">
+                    <a href="{{ url_for('download_file', filename=assignment.file_path) }}" class="btn btn-sm btn-outline-primary w-100">
+                        <i class="fas fa-download"></i> Download Attachment
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Not Submitted List -->
+        <div class="card">
+            <div class="card-header text-danger">Pending Submissions</div>
+            <ul class="list-group list-group-flush">
+                {% for student in not_submitted %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold">{{ student.first_name }} {{ student.last_name }}</div>
+                        <small class="text-muted">{{ student.student_id }}</small>
+                    </div>
+                    <span class="badge bg-danger rounded-pill">Pending</span>
+                </li>
+                {% else %}
+                <li class="list-group-item text-muted text-center py-3">
+                    Everyone has submitted! 🎉
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- Submissions List -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Student Submissions ({{ submissions|length }})</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Submitted On</th>
+                                <th>File</th>
+                                <th>Status</th>
+                                <th>Marks</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sub in submissions %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold">{{ sub.first_name }} {{ sub.last_name }}</div>
+                                    <div class="small text-muted">{{ sub.stu_id }}</div>
+                                </td>
+                                <td>
+                                    <div class="small">{{ sub.submitted_at[:10] }}</div>
+                                    <div class="small text-muted">{{ sub.submitted_at[11:16] }}</div>
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('download_file', filename=sub.file_path) }}" class="btn btn-sm btn-outline-primary" title="Download Submission">
+                                        <i class="fas fa-file-download"></i>
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if sub.status == 'graded' %}
+                                    <span class="badge bg-success">Graded</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">Needs Grading</span>
+                                    {% endif %}
+                                </td>
+                                <td class="fw-bold">
+                                    {% if sub.marks is not none %}
+                                    {{ sub.marks }} / {{ assignment.max_marks }}
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#gradeModal{{ sub.id }}">
+                                        Grade
+                                    </button>
+
+                                    <!-- Grade Modal -->
+                                    <div class="modal fade" id="gradeModal{{ sub.id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <form action="{{ url_for('grade_submission', submission_id=sub.id) }}" method="POST">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Grade Submission</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <p><strong>Student:</strong> {{ sub.first_name }} {{ sub.last_name }}</p>
+                                                            <p><strong>Max Marks:</strong> {{ assignment.max_marks }}</p>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Marks Awarded</label>
+                                                            <input type="number" name="marks" class="form-control" required
+                                                                   value="{{ sub.marks if sub.marks is not none else '' }}"
+                                                                   min="0" max="{{ assignment.max_marks }}" step="0.5">
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Feedback Comments</label>
+                                                            <textarea name="feedback" class="form-control" rows="3" 
+                                                                      placeholder="Provide constructive feedback...">{{ sub.feedback or '' }}</textarea>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                        <button type="submit" class="btn btn-primary">Save Grade</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <div style="font-size: 2rem; margin-bottom: 10px;">📄</div>
+                                    No submissions yet
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Notifications{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>🔔 Notifications</h1>
+        <p>Your latest alerts and messages</p>
+    </div>
+    <button class="btn btn-secondary" onclick="markAllRead()">
+        <i class="fas fa-check-double"></i> Mark All Read
+    </button>
+</div>
+
+<!-- Decline popup modal -->
+<div id="declineModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+     background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:16px;padding:32px;max-width:400px;width:90%;text-align:center;
+                box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <div style="font-size:3rem;margin-bottom:12px;">❌</div>
+        <h5 style="font-weight:700;margin-bottom:8px;">Cannot Attend Class</h5>
+        <p style="color:#64748b;font-size:0.875rem;margin-bottom:20px;">
+            Your teacher will be notified that you cannot attend this session.
+        </p>
+        <div style="display:flex;gap:10px;justify-content:center;">
+            <button onclick="confirmDecline()"
+                    style="background:#dc2626;color:white;border:none;border-radius:8px;
+                           padding:10px 24px;font-weight:600;cursor:pointer;">
+                Confirm — Can't Attend
+            </button>
+            <button onclick="closeDeclineModal()"
+                    style="background:#f1f5f9;color:#475569;border:none;border-radius:8px;
+                           padding:10px 24px;font-weight:600;cursor:pointer;">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        {% if notifications %}
+            {% for n in notifications %}
+            <div class="notif-item {{ 'unread' if not n.is_read }}" id="notif_{{ n.id }}">
+                <div class="notif-icon"
+                     style="background:{{ '#dcfce7' if n.type=='success' else '#fff7ed' if n.type=='warning' else '#fee2e2' if n.type=='danger' else '#e0f2fe' }};">
+                    {% if n.type == 'success' %}✅
+                    {% elif n.type == 'warning' %}⚠️
+                    {% elif n.type == 'danger' %}🚨
+                    {% else %}ℹ️{% endif %}
+                </div>
+                <div style="flex:1;">
+                    <div class="notif-title">
+                        {{ n.title }}
+                        {% if not n.is_read %}
+                        <span class="badge bg-primary ms-1" style="font-size:0.65rem;">New</span>
+                        {% endif %}
+                    </div>
+                    <div class="notif-msg" style="margin-top:4px;">
+                        {% set msg = n.message or '' %}
+                        {% if '[JOIN](' in msg %}
+                            {# Extract the join and decline URLs from message #}
+                            {% set before_join = msg.split('[JOIN](')[0] %}
+                            {% set after_join_start = msg.split('[JOIN](')[1] %}
+                            {% set join_url = after_join_start.split(')')[0] %}
+                            {{ before_join }}
+                            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                                <a href="{{ join_url }}"
+                                   style="background:#16a34a;color:white;border:none;border-radius:8px;
+                                          padding:9px 18px;font-size:0.85rem;font-weight:600;
+                                          text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+                                    🎥 Join Class Now
+                                </a>
+                                {% if '[DECLINE](' in msg %}
+                                    {% set decline_url = msg.split('[DECLINE](')[1].split(')')[0] %}
+                                    <button onclick="showDeclineModal('{{ decline_url }}')"
+                                            style="background:#fee2e2;color:#dc2626;border:1.5px solid #fca5a5;
+                                                   border-radius:8px;padding:9px 18px;font-size:0.85rem;
+                                                   font-weight:600;cursor:pointer;">
+                                        ❌ Can't Attend
+                                    </button>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            {{ msg }}
+                        {% endif %}
+                    </div>
+                    <div class="notif-time">{{ n.created_at }}</div>
+                </div>
+                {% if not n.is_read %}
+                <button onclick="markRead({{ n.id }})"
+                        style="background:none;border:none;color:#94a3b8;cursor:pointer;
+                               font-size:0.75rem;flex-shrink:0;padding:4px 8px;border-radius:6px;">
+                    ✓ Read
+                </button>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">🔔</div>
+            <h5>All caught up!</h5>
+            <p>No notifications yet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+let currentDeclineUrl = '';
+
+function showDeclineModal(url) {
+    currentDeclineUrl = url;
+    document.getElementById('declineModal').style.display = 'flex';
+}
+
+function closeDeclineModal() {
+    document.getElementById('declineModal').style.display = 'none';
+    currentDeclineUrl = '';
+}
+
+function confirmDecline() {
+    if (currentDeclineUrl) {
+        window.location.href = currentDeclineUrl;
+    }
+}
+
+function markRead(id) {
+    fetch(`/notifications/mark-read/${id}`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const item = document.getElementById(`notif_${id}`);
+                item.classList.remove('unread');
+                item.querySelector('button[onclick^="markRead"]')?.remove();
+                item.querySelector('.badge')?.remove();
+            }
+        });
+}
+
+function markAllRead() {
+    fetch('/notifications/mark-all-read', { method: 'POST' })
+        .then(r => r.json())
+        .then(() => location.reload());
+}
+</script>
+{% endblock %}

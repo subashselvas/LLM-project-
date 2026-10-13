@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — EduCore</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Sora', sans-serif;
+            min-height: 100vh;
+            background: #0a0f1e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .login-wrapper {
+            width: 100%;
+            max-width: 900px;
+            position: relative;
+            z-index: 10;
+        }
+        #mainLoginCanvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .brand {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .brand-icon {
+            width: 52px; height: 52px;
+            background: #1a56db;
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+        .brand-name {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            display: block;
+            letter-spacing: -0.5px;
+        }
+        .brand-name span { color: #60a5fa; }
+        .brand-tagline {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        .role-card {
+            background: #111827;
+            border: 1.5px solid #1f2937;
+            border-radius: 20px;
+            padding: 32px 24px;
+            text-align: center;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+        }
+        .role-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,.5);
+            border-color: transparent;
+            color: inherit;
+        }
+        .role-card.student:hover  { border-color: #3b82f6; box-shadow: 0 12px 40px rgba(59,130,246,.25); }
+        .role-card.teacher:hover  { border-color: #06b6d4; box-shadow: 0 12px 40px rgba(6,182,212,.25); }
+        .role-card.admin:hover    { border-color: #a78bfa; box-shadow: 0 12px 40px rgba(167,139,250,.25); }
+
+        .role-icon-wrap {
+            width: 64px; height: 64px;
+            border-radius: 18px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.6rem;
+        }
+        .student .role-icon-wrap  { background: rgba(59,130,246,0.15); }
+        .teacher .role-icon-wrap  { background: rgba(6,182,212,0.15); }
+        .admin .role-icon-wrap    { background: rgba(167,139,250,0.15); }
+
+        .role-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+        .role-desc {
+            font-size: 0.8rem;
+            color: #64748b;
+            line-height: 1.5;
+        }
+        .role-btn {
+            padding: 10px 24px;
+            border-radius: 10px;
+            border: none;
+            font-family: 'Sora', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            text-decoration: none;
+        }
+        .student .role-btn  { background: #1a56db; color: white; }
+        .teacher .role-btn  { background: #0891b2; color: white; }
+        .admin .role-btn    { background: #7c3aed; color: white; }
+        .role-btn:hover { filter: brightness(1.1); transform: translateY(-1px); color: white; }
+
+        .footer-links {
+            text-align: center;
+            margin-top: 32px;
+            font-size: 0.8rem;
+            color: #475569;
+        }
+        .footer-links a { color: #64748b; text-decoration: none; }
+        .footer-links a:hover { color: #60a5fa; }
+
+        @media (max-width: 640px) {
+            .role-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ─── SPLASH SCREEN ─── */
+        #splashScreen {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #050b1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        #splashScreen.hiding {
+            opacity: 0;
+            transform: scale(1.04);
+            pointer-events: none;
+        }
+        #splashCanvas {
+            position: absolute;
+            inset: 0;
+            width: 100%; height: 100%;
+            opacity: 0.7;
+        }
+        .splash-content {
+            position: relative;
+            z-index: 10;
+            text-align: center;
+            max-width: 700px;
+            padding: 0 32px;
+        }
+        .splash-logo {
+            width: 72px; height: 72px;
+            background: linear-gradient(135deg, #1a56db, #06b6d4);
+            border-radius: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 24px;
+            box-shadow: 0 0 40px rgba(26,86,219,0.6), 0 0 80px rgba(6,182,212,0.3);
+            animation: logoPulse 2s ease-in-out infinite;
+        }
+        @keyframes logoPulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(26,86,219,0.5), 0 0 60px rgba(6,182,212,0.2); }
+            50%       { box-shadow: 0 0 60px rgba(26,86,219,0.9), 0 0 120px rgba(6,182,212,0.5); }
+        }
+        .splash-brand {
+            font-size: 3rem;
+            font-weight: 800;
+            color: white;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #60a5fa, #06b6d4, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .splash-tagline {
+            font-size: 1rem;
+            color: #94a3b8;
+            margin-bottom: 40px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .typewriter-wrap {
+            min-height: 64px;
+            margin-bottom: 48px;
+        }
+        #typewriterText {
+            font-size: 1.25rem;
+            color: #e2e8f0;
+            line-height: 1.7;
+            font-weight: 300;
+        }
+        #typewriterCursor {
+            display: inline-block;
+            width: 2px;
+            height: 1.2em;
+            background: #60a5fa;
+            margin-left: 3px;
+            vertical-align: middle;
+            animation: blink 0.7s step-end infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; } 50% { opacity: 0; }
+        }
+        .splash-features {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 48px;
+        }
+        .splash-feat {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 14px;
+            padding: 14px 20px;
+            text-align: center;
+            min-width: 130px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            backdrop-filter: blur(8px);
+        }
+        .splash-feat.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .splash-feat-icon { font-size: 1.6rem; margin-bottom: 6px; }
+        .splash-feat-label { font-size: 0.75rem; color: #94a3b8; font-weight: 500; letter-spacing: 0.5px; }
+        .splash-progress-bar {
+            width: 200px;
+            height: 3px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 99px;
+            overflow: hidden;
+            margin: 0 auto 28px;
+        }
+        .splash-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #1a56db, #06b6d4);
+            border-radius: 99px;
+            width: 0%;
+            transition: width 4s linear;
+        }
+        .splash-enter-btn {
+            padding: 14px 40px;
+            background: linear-gradient(135deg, #1a56db, #0891b2);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s ease, transform 0.5s ease, box-shadow 0.3s;
+            box-shadow: 0 8px 30px rgba(26,86,219,0.4);
+        }
+        .splash-enter-btn.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .splash-enter-btn:hover {
+            box-shadow: 0 12px 40px rgba(26,86,219,0.7);
+            transform: translateY(-2px);
+        }
+        .splash-skip {
+            position: absolute;
+            top: 24px; right: 28px;
+            font-size: 0.8rem;
+            color: #475569;
+            cursor: pointer;
+            transition: color 0.2s;
+            z-index: 20;
+        }
+        .splash-skip:hover { color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <!-- ═══════════ SPLASH INTRO SCREEN ═══════════ -->
+    <div id="splashScreen">
+        <span class="splash-skip" onclick="dismissSplash()">Skip ›</span>
+        <canvas id="splashCanvas"></canvas>
+        <div class="splash-content">
+
+            <div class="splash-logo">🎓</div>
+            <div class="splash-brand">EduCore</div>
+            <div class="splash-tagline">Smart Student Management System</div>
+
+            <div class="typewriter-wrap">
+                <span id="typewriterText"></span><span id="typewriterCursor"></span>
+            </div>
+
+            <div class="splash-features">
+                <div class="splash-feat" id="feat0">
+                    <div class="splash-feat-icon">🤖</div>
+                    <div class="splash-feat-label">AI-Powered Insights</div>
+                </div>
+                <div class="splash-feat" id="feat1">
+                    <div class="splash-feat-icon">🎥</div>
+                    <div class="splash-feat-label">Live Classrooms</div>
+                </div>
+                <div class="splash-feat" id="feat2">
+                    <div class="splash-feat-icon">📊</div>
+                    <div class="splash-feat-label">Real-time Analytics</div>
+                </div>
+                <div class="splash-feat" id="feat3">
+                    <div class="splash-feat-icon">🏆</div>
+                    <div class="splash-feat-label">Gamification</div>
+                </div>
+                <div class="splash-feat" id="feat4">
+                    <div class="splash-feat-icon">🗂️</div>
+                    <div class="splash-feat-label">AI Study Cards</div>
+                </div>
+            </div>
+
+            <div class="splash-progress-bar">
+                <div class="splash-progress-fill" id="splashProgress"></div>
+            </div>
+
+            <button class="splash-enter-btn" id="enterBtn" onclick="dismissSplash()">
+                Enter EduCore &nbsp;→
+            </button>
+        </div>
+    </div>
+    <!-- ══════════════════════════════════════════ -->
+
+    <canvas id="mainLoginCanvas"></canvas>
+    <div class="login-wrapper">
+        <!-- Brand -->
+        <div class="brand">
+            <div class="brand-icon"><i class="fas fa-graduation-cap"></i></div>
+            <span class="brand-name">Edu<span>Core</span></span>
+            <p class="brand-tagline">Smart Student Management System</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div style="background:#fff5f5;border:1px solid #fecaca;border-left:4px solid #dc2626;
+                            border-radius:10px;padding:12px 16px;font-size:0.875rem;color:#991b1b;
+                            margin-bottom:20px;max-width:600px;margin-inline:auto;">
+                    <i class="fas fa-exclamation-circle"></i> {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Role Selection -->
+        <div class="role-grid">
+            <!-- Student -->
+            <div class="role-card student">
+                <div class="role-icon-wrap">🎓</div>
+                <div>
+                    <div class="role-title">Student</div>
+                    <div class="role-desc">Access courses, attendance, grades and AI insights</div>
+                </div>
+                <a href="{{ url_for('student_login') }}" class="role-btn">
+                    Sign in as Student <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <!-- Teacher -->
+            <div class="role-card teacher">
+                <div class="role-icon-wrap">👨‍🏫</div>
+                <div>
+                    <div class="role-title">Faculty</div>
+                    <div class="role-desc">Manage courses, mark attendance and conduct live classes</div>
+                </div>
+                <a href="{{ url_for('faculty_login') }}" class="role-btn">
+                    Sign in as Faculty <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <!-- Admin -->
+            <div class="role-card admin">
+                <div class="role-icon-wrap">⚙️</div>
+                <div>
+                    <div class="role-title">Administrator</div>
+                    <div class="role-desc">Full system access, analytics, exports and settings</div>
+                </div>
+                <a href="{{ url_for('admin_login') }}" class="role-btn">
+                    Sign in as Admin <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="footer-links">
+            © 2026 EduCore · Student Management System ·
+            <a href="{{ url_for('register') }}">Register</a>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="{{ url_for('static', filename='js/login_3d.js') }}"></script>
+    <script>
+    (function() {
+        // ── Session Guard: Only show once per browser session ──
+        if (sessionStorage.getItem('splashSeen')) {
+            document.getElementById('splashScreen').style.display = 'none';
+            return; // Skip all splash logic
+        }
+
+        // ── Typewriter ──
+        const sentences = [
+            "A fully AI-powered platform redefining how institutions teach,\ntrack, and engage with students.",
+            "Live virtual classrooms, real-time analytics, smart gamification,\nand Gemini-powered insights — all in one place."
+        ];
+        const textEl = document.getElementById('typewriterText');
+        let sentenceIdx = 0, charIdx = 0, erasing = false;
+
+        function type() {
+            const current = sentences[sentenceIdx].replace(/\n/g, '\n');
+            if (!erasing) {
+                textEl.innerHTML = current.slice(0, ++charIdx).replace(/\n/g, '<br>');
+                if (charIdx === current.length) {
+                    if (sentenceIdx < sentences.length - 1) {
+                        setTimeout(() => { erasing = true; type(); }, 2200);
+                    }
+                    return;
+                }
+                setTimeout(type, 28);
+            } else {
+                textEl.innerHTML = current.slice(0, --charIdx).replace(/\n/g, '<br>');
+                if (charIdx === 0) {
+                    erasing = false;
+                    sentenceIdx++;
+                    setTimeout(type, 400);
+                    return;
+                }
+                setTimeout(type, 12);
+            }
+        }
+
+        // ── Feature cards staggered reveal ──
+        function revealFeatures() {
+            [0,1,2,3,4].forEach((i) => {
+                setTimeout(() => {
+                    const el = document.getElementById('feat' + i);
+                    if (el) el.classList.add('visible');
+                }, i * 200);
+            });
+        }
+
+        // ── Progress bar + enter btn ──
+        function startProgress() {
+            const bar = document.getElementById('splashProgress');
+            const btn = document.getElementById('enterBtn');
+            // Force reflow then start
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    bar.style.width = '100%';
+                });
+            });
+            // Show Enter button at 50%
+            setTimeout(() => {
+                btn.classList.add('visible');
+            }, 2000);
+            // Auto-dismiss at 100%
+            setTimeout(() => {
+                dismissSplash();
+            }, 4200);
+        }
+
+        // ── Dismiss function ──
+        window.dismissSplash = function() {
+            const splash = document.getElementById('splashScreen');
+            splash.classList.add('hiding');
+            sessionStorage.setItem('splashSeen', '1');
+            setTimeout(() => {
+                splash.style.display = 'none';
+            }, 900);
+        };
+
+        // ── Boot sequence on DOM ready ──
+        window.addEventListener('DOMContentLoaded', () => {
+            // 1. Launch 3D scene on splash canvas
+            initLoginScene('splashCanvas', 0x1a56db, true);
+            // 2. Also init the main login background (will be behind)
+            initLoginScene('mainLoginCanvas', 0x1a56db, true);
+
+            // 3. Start typewriter after brief pause
+            setTimeout(type, 600);
+            // 4. Reveal feature cards after typewriter starts
+            setTimeout(revealFeatures, 1200);
+            // 5. Start progress bar
+            setTimeout(startProgress, 800);
+        });
+    })();
+    </script>
+</body>
+</html>

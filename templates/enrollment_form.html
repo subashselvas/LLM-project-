@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-{{ 'edit' if enrollment else 'plus' }}"></i> {{ form_title }}</h2>
+            <hr>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Enrollment Information</h5>
+                </div>
+                <div class="card-body">
+                    {% if enrollment %}
+                    <div class="alert alert-info">
+                        <strong>Student:</strong> {{ enrollment.student_first }} {{ enrollment.student_last }} ({{ enrollment.student_id }})<br>
+                        <strong>Course:</strong> {{ enrollment.course_code }} - {{ enrollment.course_name }}
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" action="{{ url_for('enrollment_add' if not enrollment else 'enrollment_edit', id=enrollment.id if enrollment else 0) }}">
+                        {% if not enrollment %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="student_id" class="form-label">Student *</label>
+                                <select class="form-select" id="student_id" name="student_id" required>
+                                    <option value="">Select Student</option>
+                                    {% for student in students %}
+                                    <option value="{{ student.id }}">
+                                        {{ student.student_id }} - {{ student.first_name }} {{ student.last_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="course_id" class="form-label">Course *</label>
+                                <select class="form-select" id="course_id" name="course_id" required>
+                                    <option value="">Select Course</option>
+                                    {% for course in courses %}
+                                    <option value="{{ course.id }}">
+                                        {{ course.course_code }} - {{ course.course_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="enrolled" {{ 'selected' if not enrollment or enrollment.status == 'enrolled' }}>Enrolled</option>
+                                    <option value="in_progress" {{ 'selected' if enrollment and enrollment.status == 'in_progress' }}>In Progress</option>
+                                    <option value="completed" {{ 'selected' if enrollment and enrollment.status == 'completed' }}>Completed</option>
+                                    <option value="dropped" {{ 'selected' if enrollment and enrollment.status == 'dropped' }}>Dropped</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="grade" class="form-label">Grade</label>
+                                <select class="form-select" id="grade" name="grade">
+                                    <option value="">Select Grade</option>
+                                    <option value="A" {{ 'selected' if enrollment and enrollment.grade == 'A' }}>A</option>
+                                    <option value="A-" {{ 'selected' if enrollment and enrollment.grade == 'A-' }}>A-</option>
+                                    <option value="B+" {{ 'selected' if enrollment and enrollment.grade == 'B+' }}>B+</option>
+                                    <option value="B" {{ 'selected' if enrollment and enrollment.grade == 'B' }}>B</option>
+                                    <option value="B-" {{ 'selected' if enrollment and enrollment.grade == 'B-' }}>B-</option>
+                                    <option value="C+" {{ 'selected' if enrollment and enrollment.grade == 'C+' }}>C+</option>
+                                    <option value="C" {{ 'selected' if enrollment and enrollment.grade == 'C' }}>C</option>
+                                    <option value="C-" {{ 'selected' if enrollment and enrollment.grade == 'C-' }}>C-</option>
+                                    <option value="D+" {{ 'selected' if enrollment and enrollment.grade == 'D+' }}>D+</option>
+                                    <option value="D" {{ 'selected' if enrollment and enrollment.grade == 'D' }}>D</option>
+                                    <option value="F" {{ 'selected' if enrollment and enrollment.grade == 'F' }}>F</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="progress" class="form-label">Progress (%)</label>
+                                <input type="number" class="form-control" id="progress" name="progress" 
+                                       value="{{ enrollment.progress if enrollment else 0 }}" min="0" max="100">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="enrollment_date" class="form-label">Enrollment Date</label>
+                                <input type="datetime-local" class="form-control" id="enrollment_date" name="enrollment_date" 
+                                       value="{{ enrollment.enrollment_date if enrollment else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3">{{ enrollment.notes if enrollment else '' }}</textarea>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Enrollment
+                            </button>
+                            <a href="{{ url_for('enrollment_list') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

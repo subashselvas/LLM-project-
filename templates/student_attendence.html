@@ -1,0 +1,54 @@
+<!-- Course-wise Attendance Summary with Full Breakdown -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Attendance Summary by Course</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Course</th>
+                                <th>Total Classes</th>
+                                <th>Present</th>
+                                <th>Absent</th>
+                                <th>Late</th>
+                                <th>Excused</th>
+                                <th>Attendance %</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in course_stats %}
+                            <tr>
+                                <td>{{ stat.course_code }} - {{ stat.course_name }}</td>
+                                <td>{{ stat.total_classes }}</td>
+                                <td class="text-success">{{ stat.present_count }}</td>
+                                <td class="text-danger">{{ stat.absent_count }}</td>
+                                <td class="text-warning">{{ stat.late_count }}</td>
+                                <td class="text-info">{{ stat.excused_count }}</td>
+                                <td>
+                                    {% set pct = (stat.present_count / stat.total_classes * 100) if stat.total_classes > 0 else 0 %}
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-{{ 'success' if pct >= 75 else 'warning' if pct >= 50 else 'danger' }}" 
+                                             role="progressbar" 
+                                             style="width: {{ pct }}%">
+                                            {{ '%.1f'|format(pct) }}%
+                                        </div>
+                                    </div>
+                                    <small>{{ stat.present_count }}/{{ stat.total_classes }}</small>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center">No attendance records found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

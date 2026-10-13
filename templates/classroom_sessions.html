@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}My Classroom Sessions{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>📋 My Classroom Sessions</h2>
+                <a href="{{ url_for('classroom_create') }}" class="btn btn-success">
+                    🔴 Start New Class
+                </a>
+            </div>
+            <hr>
+        </div>
+    </div>
+    <div class="card border-0 shadow">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Course</th>
+                            <th>Session Title</th>
+                            <th>Status</th>
+                            <th>Students</th>
+                            <th>Started</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in sessions %}
+                        <tr>
+                            <td><span class="badge bg-primary">{{ s.course_code }}</span> {{ s.course_name }}</td>
+                            <td>{{ s.session_title }}</td>
+                            <td>
+                                {% if s.status == 'active' %}
+                                    <span class="badge bg-danger">🔴 LIVE</span>
+                                {% elif s.status == 'ended' %}
+                                    <span class="badge bg-secondary">Ended</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Waiting</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ s.student_count }}</td>
+                            <td><small>{{ s.started_at or 'Not started' }}</small></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    {% if s.status in ['waiting', 'active'] %}
+                                    <a href="{{ url_for('classroom_teacher', session_id=s.id) }}"
+                                       class="btn btn-success">▶️ Enter</a>
+                                    {% endif %}
+                                    <a href="{{ url_for('classroom_report', session_id=s.id) }}"
+                                       class="btn btn-info">📊 Report</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                No sessions yet. <a href="{{ url_for('classroom_create') }}">Start your first class!</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="mt-3">
+        <a href="{{ url_for('teacher_dashboard') }}" class="btn btn-outline-secondary">← Dashboard</a>
+    </div>
+</div>
+{% endblock %}

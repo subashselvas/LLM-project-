@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Email Settings{% endblock %}
+{% block page_title %}Email Settings{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div><h1>📧 Email Settings</h1><p>Configure Gmail SMTP for notifications</p></div>
+</div>
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">⚙️ Gmail Configuration</div>
+            <div class="card-body">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}{% for cat,msg in messages %}
+                    <div class="alert alert-{{ 'danger' if cat=='error' else cat }}">{{ msg }}</div>
+                    {% endfor %}{% endif %}
+                {% endwith %}
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Gmail Address</label>
+                        <input type="email" class="form-control" name="smtp_email"
+                               value="{{ config.smtp_email if config else '' }}"
+                               placeholder="yourname@gmail.com" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">App Password</label>
+                        <input type="password" class="form-control" name="smtp_password"
+                               value="{{ config.smtp_password if config else '' }}"
+                               placeholder="16-character app password">
+                        <small class="text-muted">
+                            Get from: Google Account → Security → App Passwords
+                        </small>
+                    </div>
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="enabled"
+                                   {{ 'checked' if config and config.enabled }}>
+                            <label class="form-check-label">Enable Email Notifications</label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        💾 Save & Test Email
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header">📤 Send Bulk Email</div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('send_bulk_email_route') }}">
+                    <div class="mb-3">
+                        <label class="form-label">Send To</label>
+                        <select class="form-select" name="target">
+                            <option value="all_students">All Students</option>
+                            <option value="at_risk">At-Risk Students Only</option>
+                            <option value="all_faculty">All Faculty</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Subject</label>
+                        <input type="text" class="form-control" name="subject" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <textarea class="form-control" name="message" rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        📤 Send Bulk Email
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">🤖 Auto Alerts</div>
+            <div class="card-body">
+                <p class="text-muted small">Send automated attendance alerts to all at-risk students</p>
+                <a href="{{ url_for('send_attendance_alerts') }}" class="btn btn-warning w-100">
+                    ⚠️ Send Attendance Alerts
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

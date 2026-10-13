@@ -1,0 +1,251 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ course.course_code }} - {{ course.course_name }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('course_list') }}">Courses</a></li>
+            <li class="breadcrumb-item active">{{ course.course_code }}</li>
+        </ol>
+    </nav>
+</div>
+
+<div class="row">
+    <!-- Course Information -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-book"></i> Course Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <div class="display-1 text-primary">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <h4>{{ course.course_code }}</h4>
+                    <p class="text-muted mb-0">{{ course.course_name }}</p>
+                </div>
+                
+                <table class="table table-sm">
+                    <tr>
+                        <th>Department:</th>
+                        <td>{{ course.dept_name or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Credits:</th>
+                        <td>{{ course.credits }}</td>
+                    </tr>
+                    <tr>
+                        <th>Semester:</th>
+                        <td>{{ course.semester or 'N/A' }} {{ course.academic_year or '' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Schedule:</th>
+                        <td>{{ course.schedule or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Classroom:</th>
+                        <td>{{ course.classroom or 'N/A' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Instructor:</th>
+                        <td>
+                            {% if course.instructor_first %}
+                            {{ course.instructor_first }} {{ course.instructor_last }}
+                            <br>
+                            <small class="text-muted">{{ course.instructor_email }}</small>
+                            {% else %}
+                            Not assigned
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Enrollment:</th>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     style="width: {% if course.max_students %}{{ (course.enrolled_students / course.max_students * 100) }}{% else %}0{% endif %}%;"
+                                     aria-valuenow="{{ course.enrolled_students }}" aria-valuemin="0" aria-valuemax="{{ course.max_students }}">
+                                    {{ course.enrolled_students }}/{{ course.max_students }}
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Status:</th>
+                        <td>
+                            {% if course.status == 'active' %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Duration:</th>
+                        <td>
+                            {% if course.start_date %}
+                            {{ course.start_date }} to {{ course.end_date or 'TBD' }}
+                            {% else %}
+                            Not set
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+                
+                {% if session.role == 'admin' %}
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('course_edit', course_id=course.id) }}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Edit Course
+                    </a>
+                    <a href="{{ url_for('view_attendance', course_id=course.id) }}" class="btn btn-info">
+                        <i class="fas fa-calendar-check"></i> View Attendance
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Description -->
+        <div class="card mt-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-align-left"></i> Description</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ course.description or 'No description provided.' }}</p>
+            </div>
+        </div>
+        
+        <!-- Prerequisites -->
+        {% if course.prerequisites %}
+        <div class="card mt-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="fas fa-list"></i> Prerequisites</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ course.prerequisites }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Enrolled Students -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-users"></i> Enrolled Students ({{ students|length }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Name</th>
+                                <th>Enrollment Date</th>
+                                <th>Progress</th>
+                                <th>Grade</th>
+                                {% if session.role == 'admin' or session.role == 'teacher' %}
+                                <th>Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                            <tr>
+                                <td>{{ student.student_id }}</td>
+                                <td>
+                                    <a href="{{ url_for('student_detail', student_id=student.id) }}">
+                                        {{ student.last_name }}, {{ student.first_name }}
+                                    </a>
+                                </td>
+                                <td>{{ student.enrollment_date }}</td>
+                                <td>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar" style="width: {{ student.progress or 0 }}%;" aria-valuenow="{{ student.progress or 0 }}" aria-valuemin="0" aria-valuemax="100">
+                                            {{ student.progress or 0 }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if student.grade %}
+                                    <span class="badge bg-info">{{ student.grade }}</span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                {% if session.role == 'admin' or session.role == 'teacher' %}
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-success" onclick="updateGrade({{ student.id }}, '{{ student.grade or '' }}')">
+                                        <i class="fas fa-pencil-alt"></i> Grade
+                                    </button>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">No students enrolled in this course</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Grade Update Modal -->
+<div class="modal fade" id="gradeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('update_grade') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Update Grade</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="enrollment_id" id="enrollmentId">
+                    
+                    <div class="mb-3">
+                        <label for="grade" class="form-label">Grade</label>
+                        <select class="form-select" id="grade" name="grade" required>
+                            <option value="">Select Grade</option>
+                            <option value="A">A</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B">B</option>
+                            <option value="B-">B-</option>
+                            <option value="C+">C+</option>
+                            <option value="C">C</option>
+                            <option value="C-">C-</option>
+                            <option value="D+">D+</option>
+                            <option value="D">D</option>
+                            <option value="F">F</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Grade</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    function updateGrade(enrollmentId, currentGrade) {
+        document.getElementById('enrollmentId').value = enrollmentId;
+        if (currentGrade) {
+            document.getElementById('grade').value = currentGrade;
+        }
+        new bootstrap.Modal(document.getElementById('gradeModal')).show();
+    }
+</script>
+{% endblock %}
+{% endblock %}

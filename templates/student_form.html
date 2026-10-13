@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-{{ 'edit' if student else 'plus' }}"></i> {{ form_title }}</h2>
+            <hr>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Student Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('student_add' if not student else 'student_edit', id=student.id if student else 0) }}">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="first_name" class="form-label">First Name *</label>
+                                <input type="text" class="form-control" id="first_name" name="first_name" 
+                                       value="{{ student.first_name if student else '' }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="last_name" class="form-label">Last Name *</label>
+                                <input type="text" class="form-control" id="last_name" name="last_name" 
+                                       value="{{ student.last_name if student else '' }}" required>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="{{ student.email if student else '' }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Phone</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       value="{{ student.phone if student else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="date_of_birth" class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" 
+                                       value="{{ student.date_of_birth if student else '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="gender" class="form-label">Gender</label>
+                                <select class="form-select" id="gender" name="gender">
+                                    <option value="">Select Gender</option>
+                                    <option value="Male" {{ 'selected' if student and student.gender == 'Male' }}>Male</option>
+                                    <option value="Female" {{ 'selected' if student and student.gender == 'Female' }}>Female</option>
+                                    <option value="Other" {{ 'selected' if student and student.gender == 'Other' }}>Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <textarea class="form-control" id="address" name="address" rows="2">{{ student.address if student else '' }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="city" class="form-label">City</label>
+                                <input type="text" class="form-control" id="city" name="city" 
+                                       value="{{ student.city if student else '' }}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="state" class="form-label">State</label>
+                                <input type="text" class="form-control" id="state" name="state" 
+                                       value="{{ student.state if student else '' }}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="zip_code" class="form-label">Zip Code</label>
+                                <input type="text" class="form-control" id="zip_code" name="zip_code" 
+                                       value="{{ student.zip_code if student else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="country" class="form-label">Country</label>
+                                <input type="text" class="form-control" id="country" name="country" 
+                                       value="{{ student.country if student else 'USA' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="department_id" class="form-label">Department</label>
+                                <select class="form-select" id="department_id" name="department_id">
+                                    <option value="">Select Department</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}" {{ 'selected' if student and student.department_id == dept.id }}>
+                                        {{ dept.dept_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="enrollment_date" class="form-label">Enrollment Date</label>
+                                <input type="date" class="form-control" id="enrollment_date" name="enrollment_date" 
+                                       value="{{ student.enrollment_date if student else '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="active" {{ 'selected' if not student or student.status == 'active' }}>Active</option>
+                                    <option value="inactive" {{ 'selected' if student and student.status == 'inactive' }}>Inactive</option>
+                                    <option value="graduated" {{ 'selected' if student and student.status == 'graduated' }}>Graduated</option>
+                                    <option value="suspended" {{ 'selected' if student and student.status == 'suspended' }}>Suspended</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <h5 class="mt-4">Guardian Information</h5>
+                        <hr>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="guardian_name" class="form-label">Guardian Name</label>
+                                <input type="text" class="form-control" id="guardian_name" name="guardian_name" 
+                                       value="{{ student.guardian_name if student else '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="guardian_phone" class="form-label">Guardian Phone</label>
+                                <input type="tel" class="form-control" id="guardian_phone" name="guardian_phone" 
+                                       value="{{ student.guardian_phone if student else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="guardian_email" class="form-label">Guardian Email</label>
+                            <input type="email" class="form-control" id="guardian_email" name="guardian_email" 
+                                   value="{{ student.guardian_email if student else '' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="emergency_contact" class="form-label">Emergency Contact</label>
+                            <input type="text" class="form-control" id="emergency_contact" name="emergency_contact" 
+                                   value="{{ student.emergency_contact if student else '' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="medical_info" class="form-label">Medical Information</label>
+                            <textarea class="form-control" id="medical_info" name="medical_info" rows="2">{{ student.medical_info if student else '' }}</textarea>
+                        </div>
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Save Student
+                            </button>
+                            <a href="{{ url_for('student_list') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

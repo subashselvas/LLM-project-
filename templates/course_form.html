@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}{{ form_title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-{{ 'edit' if course else 'plus' }}"></i> {{ form_title }}</h2>
+            <hr>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Course Information</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('course_add' if not course else 'course_edit', id=course.id if course else 0) }}">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="course_code" class="form-label">Course Code *</label>
+                                <input type="text" class="form-control" id="course_code" name="course_code" 
+                                       value="{{ course.course_code if course else '' }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="course_name" class="form-label">Course Name *</label>
+                                <input type="text" class="form-control" id="course_name" name="course_name" 
+                                       value="{{ course.course_name if course else '' }}" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3">{{ course.description if course else '' }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="credits" class="form-label">Credits *</label>
+                                <input type="number" class="form-control" id="credits" name="credits" 
+                                       value="{{ course.credits if course else 3 }}" min="1" max="6" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="max_students" class="form-label">Maximum Students</label>
+                                <input type="number" class="form-control" id="max_students" name="max_students" 
+                                       value="{{ course.max_students if course else 30 }}" min="1" max="200">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="status" class="form-label">Status</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="active" {{ 'selected' if not course or course.status == 'active' }}>Active</option>
+                                    <option value="inactive" {{ 'selected' if course and course.status == 'inactive' }}>Inactive</option>
+                                    <option value="archived" {{ 'selected' if course and course.status == 'archived' }}>Archived</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="department_id" class="form-label">Department</label>
+                                <select class="form-select" id="department_id" name="department_id">
+                                    <option value="">Select Department</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}" {{ 'selected' if course and course.department_id == dept.id }}>
+                                        {{ dept.dept_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="instructor_id" class="form-label">Instructor</label>
+                                <select class="form-select" id="instructor_id" name="instructor_id">
+                                    <option value="">Select Instructor</option>
+                                    {% for instructor in instructors %}
+                                    <option value="{{ instructor.id }}" {{ 'selected' if course and course.instructor_id == instructor.id }}>
+                                        {{ instructor.first_name }} {{ instructor.last_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="semester" class="form-label">Semester</label>
+                                <select class="form-select" id="semester" name="semester">
+                                    <option value="">Select Semester</option>
+                                    <option value="Fall" {{ 'selected' if course and course.semester == 'Fall' }}>Fall</option>
+                                    <option value="Spring" {{ 'selected' if course and course.semester == 'Spring' }}>Spring</option>
+                                    <option value="Summer" {{ 'selected' if course and course.semester == 'Summer' }}>Summer</option>
+                                    <option value="Winter" {{ 'selected' if course and course.semester == 'Winter' }}>Winter</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="academic_year" class="form-label">Academic Year</label>
+                                <input type="text" class="form-control" id="academic_year" name="academic_year" 
+                                       value="{{ course.academic_year if course else '2026-2027' }}" 
+                                       placeholder="e.g., 2026-2027">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="start_date" class="form-label">Start Date</label>
+                                <input type="date" class="form-control" id="start_date" name="start_date" 
+                                       value="{{ course.start_date if course else '' }}">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="end_date" class="form-label">End Date</label>
+                                <input type="date" class="form-control" id="end_date" name="end_date" 
+                                       value="{{ course.end_date if course else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="schedule" class="form-label">Schedule</label>
+                                <input type="text" class="form-control" id="schedule" name="schedule" 
+                                       value="{{ course.schedule if course else '' }}" 
+                                       placeholder="e.g., Mon/Wed 10:00-11:30">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="classroom" class="form-label">Classroom</label>
+                                <input type="text" class="form-control" id="classroom" name="classroom" 
+                                       value="{{ course.classroom if course else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="prerequisites" class="form-label">Prerequisites</label>
+                            <textarea class="form-control" id="prerequisites" name="prerequisites" rows="2">{{ course.prerequisites if course else '' }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="mb-3">
+                            <label for="syllabus" class="form-label">Syllabus</label>
+                            <textarea class="form-control" id="syllabus" name="syllabus" rows="3">{{ course.syllabus if course else '' }}</textarea>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ 'Update Course' if course else 'Add Course' }}
+                            </button>
+                            <a href="{{ url_for('course_list') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancel
+                            </a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

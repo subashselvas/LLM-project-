@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+{% block title %}AI Attendance Analysis{% endblock %}
+
+{% block content %}
+<style>
+    .ai-header {
+        background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+        border-radius: 16px;
+        padding: 30px;
+        color: white;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+    .ai-header::before {
+        content: '🤖';
+        position: absolute;
+        right: 30px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 80px;
+        opacity: 0.15;
+    }
+    .ai-header h2 { font-size: 1.8rem; font-weight: 700; margin-bottom: 6px; }
+    .ai-header p { opacity: 0.8; margin: 0; }
+
+    .legend-bar {
+        background: white;
+        border-radius: 12px;
+        padding: 12px 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 24px;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .course-card {
+        border-radius: 16px;
+        border: none;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+        overflow: hidden;
+        transition: transform 0.2s;
+        height: 100%;
+    }
+    .course-card:hover { transform: translateY(-4px); }
+
+    .course-card .card-top {
+        padding: 20px 20px 10px;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .course-card .card-body { padding: 20px; }
+
+    .risk-badge {
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 20px;
+        color: white;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-box {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+    }
+    .stat-box .stat-value { font-size: 1.3rem; font-weight: 700; }
+    .stat-box .stat-label { font-size: 0.68rem; color: #888; margin-top: 2px; }
+
+    .progress { border-radius: 10px; }
+    .progress-bar { border-radius: 10px; }
+
+    .recovery-box {
+        border-radius: 10px;
+        padding: 12px 14px;
+        font-size: 0.85rem;
+        margin-top: 12px;
+    }
+
+    .prob-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: white;
+        margin: 0 auto 8px;
+    }
+
+    .no-courses {
+        background: white;
+        border-radius: 16px;
+        padding: 60px;
+        text-align: center;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    .summary-card {
+        border-radius: 14px;
+        border: none;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        padding: 20px;
+        margin-bottom: 24px;
+        background: white;
+    }
+</style>
+
+<div class="container-fluid">
+
+    <!-- AI Header -->
+    <div class="ai-header">
+        <h2>🤖 AI Attendance Analysis</h2>
+        <p>Smart predictions • Probability-based alerts • Recovery guidance</p>
+        <div class="mt-3 d-flex flex-wrap gap-2">
+            <span class="badge bg-light text-dark px-3 py-2">
+                📚 Semester Classes: <strong>{{ total_semester_classes }}</strong>
+            </span>
+            <span class="badge bg-light text-dark px-3 py-2">
+                📋 Courses: <strong>{{ course_analysis|length }}</strong>
+            </span>
+            {% set critical_count = course_analysis|selectattr('risk_badge', 'equalto', 'CRITICAL')|list|length %}
+            {% set warning_count = course_analysis|selectattr('risk_badge', 'equalto', 'WARNING')|list|length %}
+            {% if critical_count > 0 %}
+            <span class="badge bg-danger px-3 py-2">
+                🚨 {{ critical_count }} Critical
+            </span>
+            {% endif %}
+            {% if warning_count > 0 %}
+            <span class="badge px-3 py-2" style="background:#fd7e14;">
+                ⚠️ {{ warning_count }} Warning
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend-bar">
+        <span class="fw-semibold text-muted small">RISK LEVELS:</span>
+        <span class="risk-badge" style="background:#198754">✅ SAFE ≥ 75%</span>
+        <span class="risk-badge" style="background:#fd7e14">⚠️ WARNING 55–74%</span>
+        <span class="risk-badge" style="background:#dc3545">🚨 CRITICAL &lt; 55%</span>
+        <span class="risk-badge" style="background:#6c757d">⏳ TOO EARLY</span>
+    </div>
+
+    <!-- Course Cards -->
+    {% if course_analysis %}
+    <div class="row g-4">
+        {% for ca in course_analysis %}
+        <div class="col-md-6 col-xl-4">
+            <div class="course-card card">
+
+                <!-- Card Top -->
+                <div class="card-top" style="border-left: 5px solid {{ ca.badge_color }};">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <div>
+                            <h6 class="mb-0 fw-bold fs-5">{{ ca.course_code }}</h6>
+                            <small class="text-muted">{{ ca.course_name }}</small><br>
+                            <small class="text-muted">👨‍🏫 {{ ca.instructor }}</small>
+                        </div>
+                        <span class="risk-badge" style="background:{{ ca.badge_color }}">
+                            {{ ca.risk_badge }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-body">
+
+                    <!-- Attendance % Bar -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted fw-semibold">ATTENDANCE</small>
+                            <span class="fw-bold fs-5" style="color:{{ ca.badge_color }}">
+                                {{ ca.attendance_pct }}%
+                            </span>
+                        </div>
+                        <div class="progress" style="height:12px;">
+                            <div class="progress-bar" role="progressbar"
+                                 style="width:{{ ca.attendance_pct }}%; background:{{ ca.badge_color }};">
+                            </div>
+                        </div>
+                        <!-- 80% marker -->
+                        <div style="position:relative; height:6px;">
+                            <div style="position:absolute; left:80%; top:0; width:2px; height:16px;
+                                        background:#333; margin-top:-10px;">
+                            </div>
+                            <small style="position:absolute; left:80%; margin-left:4px; top:-8px;
+                                          font-size:0.65rem; color:#555;">80%</small>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2">
+                            <small class="text-muted">{{ ca.present }} attended / {{ ca.total_held }} held</small>
+                            <small class="text-muted">{{ ca.remaining_classes }} remaining</small>
+                        </div>
+                    </div>
+
+                    <!-- Probability + Stats Row -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <div class="stat-box">
+                                <div class="stat-value text-primary">{{ ca.total_held }}</div>
+                                <div class="stat-label">Classes Held</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-box">
+                                <div class="stat-value text-success">{{ ca.present }}</div>
+                                <div class="stat-label">Attended</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-box">
+                                <div class="stat-value" style="color:{{ ca.badge_color }}">
+                                    {% if ca.probability_of_80 is not none and ca.risk_badge != 'TOO_EARLY' %}
+                                        {{ ca.probability_of_80 }}%
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </div>
+                                <div class="stat-label">Probability</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Probability Bar -->
+                    {% if ca.probability_of_80 is not none and ca.risk_badge != 'TOO_EARLY' %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted fw-semibold">PROBABILITY OF REACHING 80%</small>
+                        </div>
+                        <div class="progress" style="height:16px;">
+                            <div class="progress-bar" role="progressbar"
+                                 style="width:{{ ca.probability_of_80 }}%; background:{{ ca.badge_color }}; font-size:0.75rem; line-height:16px;">
+                                {{ ca.probability_of_80 }}%
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Recovery Plan -->
+                    {% if ca.risk_badge == 'CRITICAL' %}
+                    <div class="recovery-box" style="background:#fff0f0; border-left: 4px solid #dc3545;">
+                        <strong>🚨 Critical Alert</strong><br>
+                        {% if ca.days_needed_to_recover == 0 %}
+                            Maintain your attendance.
+                        {% elif ca.days_needed_to_recover <= ca.remaining_classes %}
+                            Attend the next <strong>{{ ca.days_needed_to_recover }} consecutive classes</strong> without missing any.
+                        {% else %}
+                            Even attending all remaining classes may not be enough. Talk to your instructor.
+                        {% endif %}
+                    </div>
+                    {% elif ca.risk_badge == 'WARNING' %}
+                    <div class="recovery-box" style="background:#fff8f0; border-left: 4px solid #fd7e14;">
+                        <strong>⚠️ Warning</strong><br>
+                        {% if ca.days_needed_to_recover and ca.days_needed_to_recover <= ca.remaining_classes %}
+                            Attend the next <strong>{{ ca.days_needed_to_recover }} classes</strong> consistently to recover.
+                        {% else %}
+                            Stay consistent with your attendance.
+                        {% endif %}
+                    </div>
+                    {% elif ca.risk_badge == 'SAFE' %}
+                    <div class="recovery-box" style="background:#f0fff4; border-left: 4px solid #198754;">
+                        <strong>✅ You are on track!</strong><br>
+                        Keep attending regularly to maintain your attendance.
+                    </div>
+                    {% else %}
+                    <div class="recovery-box" style="background:#f8f9fa; border-left: 4px solid #6c757d;">
+                        <strong>⏳ Too Early</strong><br>
+                        Not enough classes held yet. Check back after more classes.
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <div class="no-courses">
+        <div style="font-size:4rem;">📚</div>
+        <h4 class="mt-3">No Courses Found</h4>
+        <p class="text-muted">You are not enrolled in any courses yet.</p>
+        <a href="{{ url_for('student_dashboard') }}" class="btn btn-primary mt-2">← Back to Dashboard</a>
+    </div>
+    {% endif %}
+
+    {% if course_analysis %}
+    <div class="mt-4">
+        <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-secondary">
+            ← Back to Dashboard
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

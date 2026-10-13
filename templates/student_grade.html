@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}My Grades{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="fas fa-chart-line"></i> My Grades</h2>
+            <hr>
+        </div>
+    </div>
+
+    <!-- GPA Card -->
+    <div class="row mb-4">
+        <div class="col-md-4 offset-md-4">
+            <div class="card bg-primary text-white text-center">
+                <div class="card-body">
+                    <h3>Current GPA</h3>
+                    <h1 class="display-1">{{ gpa }}</h1>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grades Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Course Grades</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="gradesTable">
+                            <thead>
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th>Credits</th>
+                                    <th>Grade</th>
+                                    <th>Progress</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for grade in grades %}
+                                <tr>
+                                    <td>{{ grade.course_code }}</td>
+                                    <td>{{ grade.course_name }}</td>
+                                    <td>{{ grade.credits }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if grade.grade >= 'B' else 'warning' if grade.grade >= 'C' else 'danger' }}">
+                                            {{ grade.grade }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: {{ grade.progress }}%">
+                                                {{ grade.progress }}%
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if grade.grade else 'warning' }}">
+                                            {{ 'Completed' if grade.grade else 'In Progress' }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No grades available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Grade Distribution -->
+    {% if grades %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Grade Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="gradeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize DataTable
+    $('#gradesTable').DataTable({
+        pageLength: 25,
+        language: {
+            search: "Search:",
+            lengthMenu: "Show _MENU_ entries per page",
+            info: "Showing _START_ to _END_ of _TOTAL_ entries",
+            paginate: {
+                first: "First",
+                last: "Last",
+                next: "Next",
+                previous: "Previous"
+            }
+        }
+    });
+
+    {% if grades %}
+    // Create Grade Distribution Chart
+    var gradeCounts = {
+        'A': 0, 'A-': 0, 'B+': 0, 'B': 0, 'B-': 0,
+        'C+': 0, 'C': 0, 'C-': 0, 'D+': 0, 'D': 0, 'F': 0
+    };
+    
+    {% for grade in grades %}
+        if (gradeCounts.hasOwnProperty('{{ grade.grade }}')) {
+            gradeCounts['{{ grade.grade }}']++;
+        }
+    {% endfor %}
+    
+    var ctx = document.getElementById('gradeChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(gradeCounts).filter(g => gradeCounts[g] > 0),
+            datasets: [{
+                label: 'Number of Courses',
+                data: Object.values(gradeCounts).filter(v => v > 0),
+                backgroundColor: '#28a745',
+                borderColor: '#1e7e34',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    stepSize: 1
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+
+{% block title %}Instructors - Student Management System{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-chalkboard-teacher"></i> Instructors</h1>
+    {% if session.role == 'admin' %}
+    <a href="#" class="btn btn-primary" onclick="alert('Add Instructor feature coming soon!')">
+        <i class="fas fa-user-plus"></i> Add New Instructor
+    </a>
+    {% endif %}
+</div>
+
+<!-- Search Bar -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control" id="searchInput" placeholder="Search instructors...">
+        </div>
+    </div>
+</div>
+
+<!-- Instructors Grid -->
+<div class="row" id="instructorsGrid">
+    {% for instructor in instructors %}
+    <div class="col-md-6 col-lg-4 mb-4 instructor-card">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="display-3 text-primary mb-3">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <h5 class="card-title">{{ instructor.first_name }} {{ instructor.last_name }}</h5>
+                <p class="text-muted mb-2">{{ instructor.instructor_id }}</p>
+                <p class="mb-2">
+                    <span class="badge bg-info">{{ instructor.dept_name or 'No Department' }}</span>
+                </p>
+                <p class="card-text">
+                    <small class="text-muted">
+                        <i class="fas fa-envelope"></i> {{ instructor.email }}<br>
+                        <i class="fas fa-phone"></i> {{ instructor.phone or 'No phone' }}<br>
+                        <i class="fas fa-graduation-cap"></i> {{ instructor.qualification or 'Qualification not specified' }}
+                    </small>
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{{ url_for('instructor_detail', instructor_id=instructor.id) }}" class="btn btn-sm btn-info">
+                        <i class="fas fa-eye"></i> View
+                    </a>
+                    {% if session.role == 'admin' %}
+                    <button class="btn btn-sm btn-warning" onclick="alert('Edit feature coming soon!')">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-footer bg-transparent">
+                <small class="text-muted">
+                    <i class="fas fa-clock"></i> Joined: {{ instructor.joining_date or 'N/A' }}
+                </small>
+                {% if instructor.status == 'active' %}
+                <span class="badge bg-success float-end">Active</span>
+                {% else %}
+                <span class="badge bg-secondary float-end">Inactive</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="alert alert-info text-center">
+            <i class="fas fa-info-circle"></i> No instructors found.
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+        const searchText = this.value.toLowerCase();
+        const cards = document.querySelectorAll('.instructor-card');
+        
+        cards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            card.style.display = text.includes(searchText) ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}
